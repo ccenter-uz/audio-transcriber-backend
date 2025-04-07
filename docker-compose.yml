@@ -1,0 +1,67 @@
+services:
+  app:
+    build: .
+    volumes:
+      - ./internal/media:/app/internal/media 
+      - ./pkg/translate:/app/pkg/translate
+      - ./pkg/translate/credentials.json:/app/pkg/translate/credentials.json
+    container_name: "1009"
+    env_file:
+      - .env
+    ports:
+      - 7070:7070
+    environment:
+      - API_KEY=AIzaSyDUHkHA2rW_wEdb9bvSYn9NFH7x0LySLlw
+    networks:
+      - ntwrk  
+    depends_on:
+      minio:
+        condition: service_healthy
+      db:
+        condition: service_started
+
+  
+  db:
+    image: postgres:latest
+    container_name: db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1111
+      POSTGRES_DB: 1009
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ntwrk
+
+  minio:
+    image: docker.io/bitnami/minio:2024
+    container_name: minio
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - 'minio_data:/data'
+    environment:
+      - MINIO_ROOT_USER=feruza
+      - MINIO_ROOT_PASSWORD=feruza17
+      - MINIO_DEFAULT_BUCKETS=1009
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+    networks:
+      - ntwrk
+
+networks:
+  ntwrk: 
+    external: true
+
+
+volumes:
+  postgres_data:
+  minio_data:
+    driver: local

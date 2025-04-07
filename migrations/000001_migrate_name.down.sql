@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS region CASCADE;
+DROP TABLE IF EXISTS region_translations CASCADE;
