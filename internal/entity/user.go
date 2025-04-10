@@ -9,21 +9,19 @@ type CreateUser struct {
 type User struct {
 	Id        int    `json:"id"`
 	Username  string `json:"username"`
-	Password  string `json:"password"`
 	Role      string `json:"role"`
 	CreatedAt string `json:"created_at"`
 }
 
 type UpdateUser struct {
-	Id       string `json:"id"`
+	Id       int    `json:"id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
 }
 
 type UpdateUserBody struct {
-	Id       string `json:"id"`
 	Username string `json:"username"`
-	Role     string `json:"role"`
+	// Role     string `json:"role"`
 }
 
 type GetUserReq struct {
@@ -42,6 +40,6 @@ type LoginReq struct {
 }
 
 type LoginRes struct {
-	AccessToken string `json:"access_token"`
+	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }

@@ -15,6 +15,7 @@ type (
 		PG     `yaml:"postgres"`
 		Minio  `yaml:"minio"`
 		ApiKey `yaml:"api_key"`
+		JWT    `yaml:"jwt"`
 	}
 
 	// App -.
@@ -51,6 +52,12 @@ type (
 	ApiKey struct {
 		Key string `env-required:"true" yaml:"key" env:"API_KEY"`
 	}
+
+	// JWT -.
+	JWT struct {
+		Secret string `env-required:"true" yaml:"secret" env:"JWT_SECRET"`
+	}
+
 )
 
 // NewConfig returns app config.

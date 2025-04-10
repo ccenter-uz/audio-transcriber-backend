@@ -6,13 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-contrib/cors" // Import the CORS package
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	// Swagger docs.
 	"github.com/mirjalilova/voice_transcribe/config"
 	_ "github.com/mirjalilova/voice_transcribe/docs"
 	"github.com/mirjalilova/voice_transcribe/internal/controller/http/handler"
@@ -32,8 +31,8 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 
 // NewRouter -.
 // Swagger spec:
-// @title       1009 API
-// @description This is a sample server 1009 server.
+// @title       Voice Transcribe API
+// @description This is a sample server Voice Transcribe server.
 // @version     1.0
 // @BasePath    /
 // @securityDefinitions.apikey BearerAuth
@@ -74,20 +73,29 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 	// Routes
 	router := engine.Group("/api/v1")
 	{
-		//auth
+		// auth
 		router.POST("/auth/login", handlerV1.Login)
-		router.GET("/region/list", handlerV1.GetRegions)
-		router.GET("/region/:id", handlerV1.GetRegion)
-		router.PUT("/region/:id", handlerV1.UpdateRegion)
-		router.DELETE("/region/:id", handlerV1.DeleteRegion)
 
-		//city
-		router.POST("/city", handlerV1.CreateCity)
-		router.GET("/city/list", handlerV1.GetCities)
-		router.GET("/city/:id", handlerV1.GetCity)
-		router.PUT("/city/:id", handlerV1.UpdateCity)
-		router.DELETE("/city/:id", handlerV1.DeleteCity)
+		// user
+		router.POST("/user/create", handlerV1.CreateUser)
+		router.GET("/user/list", handlerV1.GetUsers)
+		router.GET("/user/:id", handlerV1.GetUser)
+		router.PUT("/user/update", handlerV1.UpdateUser)
+		router.DELETE("/user/delete", handlerV1.DeleteUser)
 
-		router.POST("/data/import", handlerV1.UploadFile)
+		// transcript
+		router.GET("/transcript/list", handlerV1.GetTranscripts)
+		router.GET("/transcript/:id", handlerV1.GetTranscript)
+		router.PUT("/transcript/update", handlerV1.UpdateTranscript)
+		router.PUT("/transcript/update/status", handlerV1.UpdateStatus)
+		router.DELETE("/transcript/delete", handlerV1.DeleteTranscript)
+
+		// audio_segment
+		router.GET("/audio_segment/list", handlerV1.GetAudioSegments)
+		router.GET("/audio_segment/:id", handlerV1.GetAudioSegment)
+		router.DELETE("/audio_segment/delete", handlerV1.DeleteAudioSegment)
+
+		// dashboard
+		router.GET("/dashboard", handlerV1.GetTranscriptPercent)
 	}
 }

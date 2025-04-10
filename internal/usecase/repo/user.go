@@ -31,12 +31,18 @@ func NewAuthRepo(pg *postgres.Postgres, config *config.Config, logger *logger.Lo
 	}
 }
 
-func (r *AuthRepo) Login(ctx context.Context, req *entity.LoginReq) (*entity.LoginRes, error) {
-	res := &entity.LoginRes{}
+func (r *AuthRepo) Login(ctx context.Context, req *entity.LoginReq) (*entity.User, error) {
+	res := &entity.User{}
 
 	var password string
-	query := `SELECT password_hash FROM users WHERE username = $1 AND deleted_at = 0`
-	err := r.pg.Pool.QueryRow(ctx, query, req.Username).Scan(&password)
+	var createdAt time.Time
+	query := `SELECT id, username, role, password_hash, created_at FROM users WHERE username = $1 AND deleted_at = 0`
+	err := r.pg.Pool.QueryRow(ctx, query, req.Username).Scan(
+		&res.Id,
+		&res.Username,
+		&res.Role,
+		&password,
+		&createdAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found: %w", err)
@@ -47,6 +53,8 @@ func (r *AuthRepo) Login(ctx context.Context, req *entity.LoginReq) (*entity.Log
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); err != nil {
 		return nil, errors.New("invalid username or password")
 	}
+
+	res.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
 
 	return res, nil
 }
@@ -101,7 +109,7 @@ func (r *AuthRepo) Update(ctx context.Context, req *entity.UpdateUser) error {
 	return nil
 }
 
-func (r *AuthRepo) GetUser(ctx context.Context, id int) (*entity.User, error) {
+func (r *AuthRepo) GetById(ctx context.Context, id int) (*entity.User, error) {
 	var createdAt time.Time
 
 	query := `
@@ -122,7 +130,7 @@ func (r *AuthRepo) GetUser(ctx context.Context, id int) (*entity.User, error) {
 
 func (r *AuthRepo) GetList(ctx context.Context, req *entity.GetUserReq) (*entity.UserList, error) {
 	query := `
-	SELECT id, username, role, created_at
+	SELECT COUNT(id) OVER () AS total_count, id, username, role, created_at
 	FROM users
 	WHERE deleted_at = 0
 	`
@@ -169,7 +177,7 @@ func (r *AuthRepo) GetList(ctx context.Context, req *entity.GetUserReq) (*entity
 	return &users, nil
 }
 
-func (r *AuthRepo) Delete(ctx context.Context, id string) error {
+func (r *AuthRepo) Delete(ctx context.Context, id int) error {
 	query := `
 	UPDATE users
 	SET deleted_at = EXTRACT(EPOCH FROM NOW())

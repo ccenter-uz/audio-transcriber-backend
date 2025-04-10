@@ -1,0 +1,593 @@
+basePath: /
+definitions:
+  entity.AudioSegment:
+    properties:
+      audio_id:
+        type: integer
+      audio_name:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+    type: object
+  entity.AudioSegmentList:
+    properties:
+      audo_segments:
+        items:
+          $ref: '#/definitions/entity.AudioSegment'
+        type: array
+      count:
+        type: integer
+    type: object
+  entity.CreateUser:
+    properties:
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  entity.ErrorResponse:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  entity.LoginReq:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  entity.SuccessResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  entity.Transcript:
+    properties:
+      ai_text:
+        type: string
+      audio_id:
+        type: integer
+      audio_name:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      segment_id:
+        type: integer
+      status:
+        type: string
+      transcribe_text:
+        type: string
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  entity.TranscriptList:
+    properties:
+      count:
+        type: integer
+      transcripts:
+        items:
+          $ref: '#/definitions/entity.Transcript'
+        type: array
+    type: object
+  entity.TranscriptPersent:
+    properties:
+      audio_file_id:
+        type: integer
+      completed_segments:
+        type: integer
+      filename:
+        type: string
+      percent:
+        type: number
+      total_segments:
+        type: integer
+    type: object
+  entity.UpdateTranscriptBody:
+    properties:
+      transcribe_text:
+        type: string
+    type: object
+  entity.UpdateUserBody:
+    properties:
+      username:
+        type: string
+    type: object
+  entity.User:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  entity.UserList:
+    properties:
+      count:
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/entity.User'
+        type: array
+    type: object
+info:
+  contact: {}
+  description: This is a sample server Voice Transcribe server.
+  title: Voice Transcribe API
+  version: "1.0"
+paths:
+  /api/v1/audio_segment/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a audio_segment by ID
+      parameters:
+      - description: AudioSegment ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.AudioSegment'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a audio_segment by ID
+      tags:
+      - audio_segment
+  /api/v1/audio_segment/delete:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a audio_segment
+      parameters:
+      - description: AudioSegment ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a audio_segment
+      tags:
+      - audio_segment
+  /api/v1/audio_segment/list:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of audio_segment
+      parameters:
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: number
+      - description: Limit for pagination
+        in: query
+        name: limit
+        type: number
+      - description: Filter by audio id
+        in: query
+        name: audio_id
+        type: integer
+      - description: Filter by user id
+        in: query
+        name: user_id
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.AudioSegmentList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a list of audio_segment
+      tags:
+      - audio_segment
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login
+      parameters:
+      - description: User
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/entity.LoginReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      summary: Login
+      tags:
+      - auth
+  /api/v1/dashboard:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of audio percent
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.TranscriptPersent'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a list of audio percent
+      tags:
+      - dashboard
+  /api/v1/transcript/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a transcript by ID
+      parameters:
+      - description: Transcript ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Transcript'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a transcript by ID
+      tags:
+      - transcript
+  /api/v1/transcript/delete:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a transcript
+      parameters:
+      - description: Transcript ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a transcript
+      tags:
+      - transcript
+  /api/v1/transcript/list:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of transcripts
+      parameters:
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: number
+      - description: Limit for pagination
+        in: query
+        name: limit
+        type: number
+      - description: Filter by audio id
+        in: query
+        name: audio_id
+        type: integer
+      - description: Filter by user id
+        in: query
+        name: user_id
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.TranscriptList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a list of transcripts
+      tags:
+      - transcript
+  /api/v1/transcript/update:
+    put:
+      consumes:
+      - application/json
+      description: Update a transcript
+      parameters:
+      - description: Transcript ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Transcript object
+        in: body
+        name: transcript
+        required: true
+        schema:
+          $ref: '#/definitions/entity.UpdateTranscriptBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a transcript
+      tags:
+      - transcript
+  /api/v1/transcript/update/status:
+    put:
+      consumes:
+      - application/json
+      description: Update a transcript
+      parameters:
+      - description: Transcript ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a transcript
+      tags:
+      - transcript
+  /api/v1/user/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a user by ID
+      parameters:
+      - description: User ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a user by ID
+      tags:
+      - user
+  /api/v1/user/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user
+      parameters:
+      - description: User object
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/entity.CreateUser'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new user
+      tags:
+      - user
+  /api/v1/user/delete:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user
+      parameters:
+      - description: User ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a user
+      tags:
+      - user
+  /api/v1/user/list:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of users
+      parameters:
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: number
+      - description: Limit for pagination
+        in: query
+        name: limit
+        type: number
+      - description: Search by username
+        in: query
+        name: username
+        type: string
+      - description: Filter by user role
+        in: query
+        name: role
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UserList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a list of users
+      tags:
+      - user
+  /api/v1/user/update:
+    put:
+      consumes:
+      - application/json
+      description: Update a user
+      parameters:
+      - description: User ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: User object
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/entity.UpdateUserBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a user
+      tags:
+      - user
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

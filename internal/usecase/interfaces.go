@@ -10,12 +10,30 @@ import (
 //go:generate mockgen -source=interfaces.go -destination=./mocks_test.go -package=usecase_test
 
 type (
-	// TeamRepo -.
-	RegionRepoI interface {
-		Create(ctx context.Context, req *entity.CreateRegion) error
-		GetById(ctx context.Context, id string) (*entity.Region, error)
-		GetList(ctx context.Context, req entity.RegionSearch) (*entity.RegionList, error)
-		Update(ctx context.Context, req entity.UpdateRegion) error
-		Delete(ctx context.Context, id string) error
+	// AuthRepo -.
+	AuthRepoI interface {
+		Login(ctx context.Context, req *entity.LoginReq) (*entity.User, error)
+		Create(ctx context.Context, req *entity.CreateUser) error
+		GetById(ctx context.Context, id int) (*entity.User, error)
+		GetList(ctx context.Context, req *entity.GetUserReq) (*entity.UserList, error)
+		Update(ctx context.Context, req *entity.UpdateUser) error
+		Delete(ctx context.Context, id int) error
+	}
+
+	// TranscriptRepo -.
+	TranscriptRepoI interface {
+		GetById(ctx context.Context, id int) (*entity.Transcript, error)
+		GetList(ctx context.Context, req *entity.GetTranscriptReq) (*entity.TranscriptList, error)
+		Update(ctx context.Context, req *entity.UpdateTranscript) error
+		UpdateStatus(ctx context.Context, id *int) error
+		Delete(ctx context.Context, id int) error
+	}
+
+	// AudioSegment -.
+	AudioSegmentI interface {
+		GetById(ctx context.Context, id int) (*entity.AudioSegment, error)
+		GetList(ctx context.Context, req *entity.GetAudioSegmentReq) (*entity.AudioSegmentList, error)
+		Delete(ctx context.Context, id int) error
+		GetTranscriptPercent(ctx context.Context) (*[]entity.TranscriptPersent, error)
 	}
 )
