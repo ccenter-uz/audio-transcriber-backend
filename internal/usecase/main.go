@@ -8,15 +8,17 @@ import (
 )
 
 type UseCase struct {
-	AuthRepo           AuthRepoI
-	TranscriptRepo     TranscriptRepoI
-	AudioSegmentRepo   AudioSegmentI
+	AuthRepo         AuthRepoI
+	TranscriptRepo   TranscriptRepoI
+	AudioSegmentRepo AudioSegmentRepoI
+	AudioFileRepo    AudioFileRepoI
 }
 
 func New(pg *postgres.Postgres, config *config.Config, logger *logger.Logger) *UseCase {
 	return &UseCase{
-		AuthRepo:           repo.NewAuthRepo(pg, config, logger),
-		TranscriptRepo:     repo.NewTranscriptRepo(pg, config, logger),
-		AudioSegmentRepo:   repo.NewAudioSegmentRepo(pg, config, logger),
+		AuthRepo:         repo.NewAuthRepo(pg, config, logger),
+		TranscriptRepo:   repo.NewTranscriptRepo(pg, config, logger),
+		AudioSegmentRepo: repo.NewAudioSegmentRepo(pg, config, logger),
+		AudioFileRepo:    repo.NewAudioFileRepo(pg, config, logger),
 	}
 }

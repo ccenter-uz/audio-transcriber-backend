@@ -143,3 +143,24 @@ func (h *Handler) GetTranscriptPercent(ctx *gin.Context) {
 	// Return response
 	ctx.JSON(http.StatusOK, res)
 }
+
+// GetUsersTranscriptCount godoc
+// @Router /api/v1/dashboard/users [get]
+// @Summary Get a list number of transcripts of users
+// @Description Get a list number of transcripts of users
+// @Security BearerAuth
+// @Tags dashboard
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} []entity.UserTranscriptCount
+// @Failure 400 {object} entity.ErrorResponse
+func (h *Handler) GetUsersTranscriptCount(ctx *gin.Context) {
+	res, err := h.UseCase.AudioSegmentRepo.GetUserTranscriptCount(ctx)
+	if h.HandleDbError(ctx, err, "Error getting number of transcripts of users") {
+		slog.Error("GetUsersTranscriptCount error", slog.String("error", err.Error()))
+		return
+	}
+
+	// Return response
+	ctx.JSON(http.StatusOK, res)
+}

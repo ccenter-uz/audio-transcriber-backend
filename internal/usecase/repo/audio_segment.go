@@ -166,3 +166,45 @@ func (r *AudioSegmentRepo) GetTranscriptPercent(ctx context.Context) (*[]entity.
 
 	return &res, nil
 }
+
+func (r *AudioSegmentRepo) GetUserTranscriptCount(ctx context.Context) (*[]entity.UserTranscriptCount, error) {
+	query := `SELECT 
+				t.user_id,
+				u.username,
+				COUNT(t.id) AS done_count
+			FROM 
+				transcripts t 
+			JOIN
+				users u ON t.user_id = u.id
+			WHERE 
+				t.status = 'done'
+				AND t.transcribe_text IS NOT NULL
+				AND TRIM(t.transcribe_text) <> ''
+				AND t.deleted_at = 0
+			GROUP BY 
+				t.user_id, u.username
+`
+
+	rows, err := r.pg.Pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := []entity.UserTranscriptCount{}
+	for rows.Next() {
+		reps := entity.UserTranscriptCount{}
+		err := rows.Scan(
+			&reps.UserId,
+			&reps.Username,
+			&reps.TotalSegments,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user transcript count: %w", err)
+		}
+
+		res = append(res, reps)
+	}
+
+	return &res, nil
+}

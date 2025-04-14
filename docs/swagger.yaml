@@ -125,6 +125,15 @@ definitions:
           $ref: '#/definitions/entity.User'
         type: array
     type: object
+  entity.UserTranscriptCount:
+    properties:
+      total_segments:
+        type: integer
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
 info:
   contact: {}
   description: This is a sample server Voice Transcribe server.
@@ -274,6 +283,29 @@ paths:
       security:
       - BearerAuth: []
       summary: Get a list of audio percent
+      tags:
+      - dashboard
+  /api/v1/dashboard/users:
+    get:
+      consumes:
+      - application/json
+      description: Get a list number of transcripts of users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.UserTranscriptCount'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a list number of transcripts of users
       tags:
       - dashboard
   /api/v1/transcript/{id}:
@@ -432,6 +464,40 @@ paths:
       summary: Update a transcript
       tags:
       - transcript
+  /api/v1/upload-zip-audio:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload Zip file
+      parameters:
+      - description: Zip file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Upload Zip file
+      tags:
+      - audio
   /api/v1/user/{id}:
     get:
       consumes:

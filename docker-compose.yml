@@ -2,6 +2,8 @@ services:
   app:
     build: .
     container_name: "voice_transcribe"
+    volumes:
+      - ./internal/media:/app/internal/media 
     env_file:
       - .env
     ports:

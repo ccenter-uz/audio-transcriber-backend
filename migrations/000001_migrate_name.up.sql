@@ -21,6 +21,7 @@ CREATE TABLE audio_files (
     id SERIAL PRIMARY KEY,
     filename VARCHAR(100) NOT NULL,
     file_path TEXT NOT NULL,
+    status file_status NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     deleted_at BIGINT NOT NULL DEFAULT 0
@@ -31,7 +32,6 @@ CREATE INDEX idx_audio_files_id ON audio_files (id);
 CREATE TABLE audio_file_segments (
     id SERIAL PRIMARY KEY,
     audio_id INT NOT NULL REFERENCES audio_files(id),
-    status file_status NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     deleted_at BIGINT NOT NULL DEFAULT 0

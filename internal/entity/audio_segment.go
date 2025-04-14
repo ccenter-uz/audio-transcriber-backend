@@ -25,3 +25,9 @@ type TranscriptPersent struct {
 	CompletedSegments int     `json:"completed_segments"`
 	Percent           float64 `json:"percent"`
 }
+
+type UserTranscriptCount struct {
+	UserId        int    `json:"user_id"`
+	Username      string `json:"username"`
+	TotalSegments int    `json:"total_segments"`
+}

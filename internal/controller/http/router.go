@@ -97,5 +97,9 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 
 		// dashboard
 		router.GET("/dashboard", handlerV1.GetTranscriptPercent)
+		router.GET("/dashboard/users", handlerV1.GetUsersTranscriptCount)
+
+		// audio
+		router.POST("/upload-zip-audio", handlerV1.UploadZipAndExtractAudio)
 	}
 }

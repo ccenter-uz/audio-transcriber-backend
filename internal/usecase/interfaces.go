@@ -29,11 +29,17 @@ type (
 		Delete(ctx context.Context, id int) error
 	}
 
-	// AudioSegment -.
-	AudioSegmentI interface {
+	// AudioSegmentRepo -.
+	AudioSegmentRepoI interface {
 		GetById(ctx context.Context, id int) (*entity.AudioSegment, error)
 		GetList(ctx context.Context, req *entity.GetAudioSegmentReq) (*entity.AudioSegmentList, error)
 		Delete(ctx context.Context, id int) error
 		GetTranscriptPercent(ctx context.Context) (*[]entity.TranscriptPersent, error)
+		GetUserTranscriptCount(ctx context.Context) (*[]entity.UserTranscriptCount, error)
+	}
+
+	// AudioFileRepo -.
+	AudioFileRepoI interface {
+		Create(ctx context.Context, req *entity.CreateAudioFile) error
 	}
 )

@@ -244,6 +244,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dashboard/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a list number of transcripts of users",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dashboard"
+                ],
+                "summary": "Get a list number of transcripts of users",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entity.UserTranscriptCount"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/transcript/delete": {
             "delete": {
                 "security": [
@@ -486,6 +523,57 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/upload-zip-audio": {
+            "post": {
+                "description": "Upload Zip file",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audio"
+                ],
+                "summary": "Upload Zip file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Zip file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -927,6 +1015,20 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/entity.User"
                     }
+                }
+            }
+        },
+        "entity.UserTranscriptCount": {
+            "type": "object",
+            "properties": {
+                "total_segments": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         }
