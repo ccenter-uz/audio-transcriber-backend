@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -59,29 +58,28 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 	// engine.Use(handlerV1.AuthMiddleware(e))
 	engine.Use(TimeoutMiddleware(5 * time.Second))
 	// engine.Use(TimeoutMiddleware(5 * time.Second))
-	fmt.Println("router", 1)
-	// Swagger
 	url := ginSwagger.URL("swagger/doc.json") // The url pointing to API definition
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
-	fmt.Println("Swagger", 2)
 	// K8s probe
 	engine.GET("/healthz", func(c *gin.Context) { c.Status(http.StatusOK) })
-	fmt.Println("Swagger", 3)
+	engine.Use(cors.Default())
 	// Prometheus metrics
 	engine.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	engine.Static("/audios", "./internal/media/audio")
 
 	// Routes
 	router := engine.Group("/api/v1")
 	{
 		// auth
 		router.POST("/auth/login", handlerV1.Login)
+		router.GET("/auth/one", handlerV1.GetUser)
 
-		// user
-		router.POST("/user/create", handlerV1.CreateUser)
-		router.GET("/user/list", handlerV1.GetUsers)
-		router.GET("/user/:id", handlerV1.GetUser)
-		router.PUT("/user/update", handlerV1.UpdateUser)
-		router.DELETE("/user/delete", handlerV1.DeleteUser)
+		// // user
+		// router.POST("/user/create", handlerV1.CreateUser)
+		// router.GET("/user/list", handlerV1.GetUsers)
+		// router.GET("/user/:id", handlerV1.GetUser)
+		// router.PUT("/user/update", handlerV1.UpdateUser)
+		// router.DELETE("/user/delete", handlerV1.DeleteUser)
 
 		// transcript
 		router.GET("/transcript/list", handlerV1.GetTranscripts)
@@ -91,9 +89,10 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 		router.DELETE("/transcript/delete", handlerV1.DeleteTranscript)
 
 		// audio_segment
-		router.GET("/audio_segment/list", handlerV1.GetAudioSegments)
+		router.GET("/audio_segment", handlerV1.GetAudioSegments)
 		router.GET("/audio_segment/:id", handlerV1.GetAudioSegment)
 		router.DELETE("/audio_segment/delete", handlerV1.DeleteAudioSegment)
+		// router.Static("/audios", "./internal/media/audio")
 
 		// dashboard
 		router.GET("/dashboard", handlerV1.GetTranscriptPercent)

@@ -10,18 +10,19 @@ import (
 //go:generate mockgen -source=interfaces.go -destination=./mocks_test.go -package=usecase_test
 
 type (
-	// AuthRepo -.
-	AuthRepoI interface {
-		Login(ctx context.Context, req *entity.LoginReq) (*entity.User, error)
-		Create(ctx context.Context, req *entity.CreateUser) error
-		GetById(ctx context.Context, id int) (*entity.User, error)
-		GetList(ctx context.Context, req *entity.GetUserReq) (*entity.UserList, error)
-		Update(ctx context.Context, req *entity.UpdateUser) error
-		Delete(ctx context.Context, id int) error
-	}
+	// // AuthRepo -.
+	// AuthRepoI interface {
+	// 	Login(ctx context.Context, req *entity.LoginReq) (*entity.User, error)
+	// 	Create(ctx context.Context, req *entity.CreateUser) error
+	// 	GetById(ctx context.Context, id int) (*entity.User, error)
+	// 	GetList(ctx context.Context, req *entity.GetUserReq) (*entity.UserList, error)
+	// 	Update(ctx context.Context, req *entity.UpdateUser) error
+	// 	Delete(ctx context.Context, id int) error
+	// }
 
 	// TranscriptRepo -.
 	TranscriptRepoI interface {
+		Create(ctx context.Context, req *entity.CreateTranscript) error
 		GetById(ctx context.Context, id int) (*entity.Transcript, error)
 		GetList(ctx context.Context, req *entity.GetTranscriptReq) (*entity.TranscriptList, error)
 		Update(ctx context.Context, req *entity.UpdateTranscript) error
@@ -31,6 +32,7 @@ type (
 
 	// AudioSegmentRepo -.
 	AudioSegmentRepoI interface {
+		Create(ctx context.Context, req *entity.CreateAudioSegment) error
 		GetById(ctx context.Context, id int) (*entity.AudioSegment, error)
 		GetList(ctx context.Context, req *entity.GetAudioSegmentReq) (*entity.AudioSegmentList, error)
 		Delete(ctx context.Context, id int) error
@@ -40,6 +42,6 @@ type (
 
 	// AudioFileRepo -.
 	AudioFileRepoI interface {
-		Create(ctx context.Context, req *entity.CreateAudioFile) error
+		Create(ctx context.Context, req *entity.CreateAudioFile) (*int, error)
 	}
 )

@@ -29,6 +29,47 @@ func NewAudioSegmentRepo(pg *postgres.Postgres, config *config.Config, logger *l
 	}
 }
 
+func (r *AudioSegmentRepo) Create(ctx context.Context, req *entity.CreateAudioSegment) error {
+
+	tr, err := r.pg.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err := tr.Rollback(ctx); err != nil {
+			r.logger.Error("failed to rollback transaction: %v", err)
+		}
+	}()
+
+	query := `
+	INSERT INTO audio_file_segments (audio_id, filename)
+	VALUES ($1, $2)
+	RETURNING id
+	`
+
+	var id int
+	_ = tr.QueryRow(ctx, query, req.AudioId, req.FileName).Scan(&id)
+	if err != nil {
+		tr.Rollback(ctx)
+		return fmt.Errorf("failed to create audio segment: %w", err)
+	}
+
+	query = `
+	INSERT INTO transcripts (segment_id)
+	VALUES ($1)
+	`
+
+	_, err = tr.Exec(ctx, query, id)
+	if err != nil {
+		tr.Rollback(ctx)
+		return fmt.Errorf("failed to create transcript: %w", err)
+	}
+	if err := tr.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
+}
+
 func (r *AudioSegmentRepo) GetById(ctx context.Context, id int) (*entity.AudioSegment, error) {
 	var createdAt time.Time
 
@@ -37,10 +78,13 @@ func (r *AudioSegmentRepo) GetById(ctx context.Context, id int) (*entity.AudioSe
 		s.id,
 		s.audio_id,
 		a.filename,
-		s.status,
+		s.filename,
+		t.status,
 		s.created_at
 	FROM audio_file_segments s
 	JOIN audio_files a ON s.audio_id = a.id
+	JOIN 
+		transcripts t ON t.segment_id = s.id
 	WHERE s.id = $1 AND a.deleted_at = 0 AND s.deleted_at = 0
 	`
 	segment := &entity.AudioSegment{}
@@ -48,6 +92,7 @@ func (r *AudioSegmentRepo) GetById(ctx context.Context, id int) (*entity.AudioSe
 		&segment.Id,
 		&segment.AudioId,
 		&segment.AudioName,
+		&segment.FilePath,
 		&segment.Status,
 		&createdAt)
 	if err != nil {
@@ -62,15 +107,20 @@ func (r *AudioSegmentRepo) GetById(ctx context.Context, id int) (*entity.AudioSe
 func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegmentReq) (*entity.AudioSegmentList, error) {
 	query := `
 	SELECT 
-	COUNT(s.id) OVER () AS total_count,
-	s.id,
-	s.audio_id,
-	a.filename,
-	s.status,
-	s.created_at
-	FROM audio_file_segments s
-	JOIN audio_files a ON s.audio_id = a.id
-	WHERE a.deleted_at = 0 AND s.deleted_at = 0
+		COUNT(s.id) OVER () AS total_count,
+		s.id,
+		s.audio_id,
+		a.filename,
+		t.status,
+		s.created_at
+	FROM 
+		audio_file_segments s
+	JOIN 
+		audio_files a ON s.audio_id = a.id
+	JOIN 
+		transcripts t ON t.segment_id = s.id
+	WHERE 
+		a.deleted_at = 0 AND s.deleted_at = 0
 	`
 
 	var conditions []string
@@ -82,8 +132,13 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	}
 
 	if req.Status != "" {
-		conditions = append(conditions, "s.status = $"+strconv.Itoa(len(args)+1))
+		conditions = append(conditions, "t.status = $"+strconv.Itoa(len(args)+1))
 		args = append(args, req.Status)
+	}
+
+	if req.Status == "" && req.AudioId == "" {
+		conditions = append(conditions, "a.status = 'processing'")
+		conditions = append(conditions, "t.status = 'ready'")
 	}
 
 	if len(conditions) > 0 {
@@ -93,6 +148,9 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	query += ` ORDER BY s.created_at DESC OFFSET $` + strconv.Itoa(len(args)+1) + ` LIMIT $` + strconv.Itoa(len(args)+2)
 
 	args = append(args, req.Filter.Offset, req.Filter.Limit)
+
+	fmt.Println("Query:", query)
+	fmt.Println("Args:", args)
 
 	rows, err := r.pg.Pool.Query(ctx, query, args...)
 	if err != nil {

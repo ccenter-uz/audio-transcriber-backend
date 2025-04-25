@@ -4,6 +4,7 @@ services:
     container_name: "voice_transcribe"
     volumes:
       - ./internal/media:/app/internal/media 
+      - ./internal/media/audio:/app/internal/media/audio
     env_file:
       - .env
     ports:

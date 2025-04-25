@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -39,12 +40,16 @@ func (h *Handler) GetAudioSegment(ctx *gin.Context) {
 		return
 	}
 
+	baseURL := "http://localhost:8080"
+	audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, "95c1faa2-4974-41b2-8a9d-3c6bd59f6fd9_chunk_135.wav")
+	audio_segment.FilePath = audioSegmentURL	
+
 	slog.Info("AudioSegment retrieved successfully")
 	ctx.JSON(200, audio_segment)
 }
 
 // GetAudioSegments godoc
-// @Router /api/v1/audio_segment/list [get]
+// @Router /api/v1/audio_segment [get]
 // @Summary Get a list of audio_segment
 // @Description Get a list of audio_segment
 // @Security BearerAuth
@@ -54,7 +59,7 @@ func (h *Handler) GetAudioSegment(ctx *gin.Context) {
 // @Param offset query number false "Offset for pagination"
 // @Param limit query number false "Limit for pagination"
 // @Param audio_id query int false "Filter by audio id"
-// @Param user_id query int false "Filter by user id"
+// // @Param user_id query int false "Filter by user id"
 // @Param status query string false "Filter by status"
 // @Success 200 {object} entity.AudioSegmentList
 // @Failure 400 {object} entity.ErrorResponse

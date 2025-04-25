@@ -9,17 +9,25 @@ type Transcript struct {
 	Username       string `json:"username"`
 	AIText         string `json:"ai_text"`
 	TranscriptText string `json:"transcribe_text"`
+	ReportText     string `json:"report_text"`
 	Status         string `json:"status"`
 	CreatedAt      string `json:"created_at"`
+}
+
+type CreateTranscript struct {
+	SegmentId int `json:"segment_id"`
+	AIText    string `json:"ai_text"`
 }
 
 type UpdateTranscript struct {
 	Id             int    `json:"id"`
 	TranscriptText string `json:"transcribe_text"`
+	ReportText     string `json:"report_text"`
 }
 
 type UpdateTranscriptBody struct {
 	TranscriptText string `json:"transcribe_text"`
+	ReportText     string `json:"report_text"`
 }
 
 type GetTranscriptReq struct {

@@ -32,6 +32,7 @@ CREATE INDEX idx_audio_files_id ON audio_files (id);
 CREATE TABLE audio_file_segments (
     id SERIAL PRIMARY KEY,
     audio_id INT NOT NULL REFERENCES audio_files(id),
+    filename VARCHAR(100) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     deleted_at BIGINT NOT NULL DEFAULT 0
@@ -42,9 +43,10 @@ CREATE INDEX idx_audio_file_segments_audio_id ON audio_file_segments (audio_id);
 CREATE TABLE transcripts (
     id SERIAL PRIMARY KEY,
     segment_id INT NOT NULL REFERENCES audio_file_segments(id),
-    user_id INT NOT NULL REFERENCES users(id),
+    user_id UUID ,
     ai_text TEXT,
     transcribe_text TEXT,
+    report_text TEXT,
     status transcript_status NOT NULL DEFAULT 'ready',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),

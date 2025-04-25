@@ -15,50 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/audio_segment/delete": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete a audio_segment",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "audio_segment"
-                ],
-                "summary": "Delete a audio_segment",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "AudioSegment ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/entity.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/entity.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/audio_segment/list": {
+        "/api/v1/audio_segment": {
             "get": {
                 "security": [
                     {
@@ -96,12 +53,6 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Filter by user id",
-                        "name": "user_id",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
                         "description": "Filter by status",
                         "name": "status",
@@ -113,6 +64,49 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/entity.AudioSegmentList"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/audio_segment/delete": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a audio_segment",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audio_segment"
+                ],
+                "summary": "Delete a audio_segment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "AudioSegment ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entity.SuccessResponse"
                         }
                     },
                     "400": {
@@ -196,6 +190,40 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/entity.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/one": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get a user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entity.UserInfo"
                         }
                     },
                     "400": {
@@ -578,249 +606,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/api/v1/user/create": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create a new user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "Create a new user",
-                "parameters": [
-                    {
-                        "description": "User object",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/entity.CreateUser"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/entity.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/entity.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/user/delete": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "Delete a user",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/entity.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/entity.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/user/list": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get a list of users",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "Get a list of users",
-                "parameters": [
-                    {
-                        "type": "number",
-                        "description": "Offset for pagination",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Limit for pagination",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Search by username",
-                        "name": "username",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by user role",
-                        "name": "role",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/entity.UserList"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/entity.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/user/update": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "Update a user",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "description": "User object",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/entity.UpdateUserBody"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/entity.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/entity.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/user/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get a user by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "Get a user by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/entity.User"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/entity.ErrorResponse"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -836,6 +621,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "file_path": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -847,7 +635,7 @@ const docTemplate = `{
         "entity.AudioSegmentList": {
             "type": "object",
             "properties": {
-                "audo_segments": {
+                "audio_segments": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/entity.AudioSegment"
@@ -855,20 +643,6 @@ const docTemplate = `{
                 },
                 "count": {
                     "type": "integer"
-                }
-            }
-        },
-        "entity.CreateUser": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
                 }
             }
         },
@@ -886,10 +660,10 @@ const docTemplate = `{
         "entity.LoginReq": {
             "type": "object",
             "properties": {
-                "password": {
+                "login": {
                     "type": "string"
                 },
-                "username": {
+                "password": {
                     "type": "string"
                 }
             }
@@ -919,6 +693,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "report_text": {
+                    "type": "string"
                 },
                 "segment_id": {
                     "type": "integer"
@@ -974,47 +751,49 @@ const docTemplate = `{
         "entity.UpdateTranscriptBody": {
             "type": "object",
             "properties": {
+                "report_text": {
+                    "type": "string"
+                },
                 "transcribe_text": {
                     "type": "string"
                 }
             }
         },
-        "entity.UpdateUserBody": {
+        "entity.UserInfo": {
             "type": "object",
             "properties": {
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "entity.User": {
-            "type": "object",
-            "properties": {
-                "created_at": {
+                "agent_id": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
+                "create_data": {
+                    "type": "string"
+                },
+                "first_number": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
                 },
                 "role": {
                     "type": "string"
                 },
-                "username": {
+                "secont_number": {
                     "type": "string"
-                }
-            }
-        },
-        "entity.UserList": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
                 },
-                "users": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/entity.User"
-                    }
+                "service_name": {
+                    "type": "string"
+                },
+                "update_data": {
+                    "type": "string"
                 }
             }
         },
@@ -1052,6 +831,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "This is a sample server Voice Transcribe server.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

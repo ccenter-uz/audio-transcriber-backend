@@ -23,3 +23,14 @@ type MultilingualField struct {
 	Ru string `json:"ru" example:"Русский"`
 	Cy string `json:"cy" example:"Cyril"`
 }
+
+type Chunk struct {
+	Start   float64 `json:"start"`
+	End     float64 `json:"end"`
+	ChunkID string  `json:"chunk_id"`
+}
+
+type Response struct {
+	JobID  string  `json:"job_id"`
+	Chunks []Chunk `json:"chunks"`
+}

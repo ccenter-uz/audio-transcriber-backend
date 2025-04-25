@@ -34,6 +34,7 @@ func main() {
 
 	var audioFiles []string
 	for _, file := range allFiles {
+		
 		ext := strings.ToLower(filepath.Ext(file))
 		if ext == ".mp3" || ext == ".wav" || ext == ".flac" || ext == ".ogg" {
 			audioFiles = append(audioFiles, file)
@@ -41,8 +42,7 @@ func main() {
 	}
 
 	for _, audioPath := range audioFiles {
-		fmt.Println("Processing audio file:", audioPath)
-
+		fmt.Println(audioPath, "ssssssssssssssssssssssss")
 		file, err := os.Open(audioPath)
 		if err != nil {
 			panic(err)
@@ -97,7 +97,6 @@ func main() {
 		outputDir := "./internal/media/segments"
 		os.MkdirAll(outputDir, os.ModePerm)
 
-		fmt.Println("Downloading chunks...")
 		for _, chunk := range result.Chunks {
 			downloadURL := fmt.Sprintf("http://192.168.31.24:8000/download/%s/%s", result.JobID, chunk.ChunkID)
 
@@ -126,8 +125,6 @@ func main() {
 			}
 			outFile.Close()
 
-			fmt.Println(result.JobID)
-			fmt.Printf("Saved: %s (start=%.2f, end=%.2f)\n", chunk.ChunkID, chunk.Start, chunk.End)
 		}
 	}
 }

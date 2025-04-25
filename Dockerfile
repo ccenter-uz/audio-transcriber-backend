@@ -20,6 +20,7 @@ COPY --from=builder /app/voice_transcribe /app/voice_transcribe
 COPY --from=builder /app/config /app/config
 COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/internal/media /app/internal/media
+COPY --from=builder /app/internal/media/audio /app/internal/media/audio
 
 RUN chmod +x /app/voice_transcribe
 

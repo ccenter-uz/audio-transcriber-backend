@@ -8,6 +8,8 @@ definitions:
         type: string
       created_at:
         type: string
+      file_path:
+        type: string
       id:
         type: integer
       status:
@@ -15,21 +17,12 @@ definitions:
     type: object
   entity.AudioSegmentList:
     properties:
-      audo_segments:
+      audio_segments:
         items:
           $ref: '#/definitions/entity.AudioSegment'
         type: array
       count:
         type: integer
-    type: object
-  entity.CreateUser:
-    properties:
-      password:
-        type: string
-      role:
-        type: string
-      username:
-        type: string
     type: object
   entity.ErrorResponse:
     properties:
@@ -40,9 +33,9 @@ definitions:
     type: object
   entity.LoginReq:
     properties:
-      password:
+      login:
         type: string
-      username:
+      password:
         type: string
     type: object
   entity.SuccessResponse:
@@ -62,6 +55,8 @@ definitions:
         type: string
       id:
         type: integer
+      report_text:
+        type: string
       segment_id:
         type: integer
       status:
@@ -97,33 +92,35 @@ definitions:
     type: object
   entity.UpdateTranscriptBody:
     properties:
+      report_text:
+        type: string
       transcribe_text:
         type: string
     type: object
-  entity.UpdateUserBody:
+  entity.UserInfo:
     properties:
-      username:
+      agent_id:
         type: string
-    type: object
-  entity.User:
-    properties:
-      created_at:
+      create_data:
         type: string
-      id:
-        type: integer
+      first_number:
+        type: string
+      image:
+        type: string
+      login:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
       role:
         type: string
-      username:
+      secont_number:
         type: string
-    type: object
-  entity.UserList:
-    properties:
-      count:
-        type: integer
-      users:
-        items:
-          $ref: '#/definitions/entity.User'
-        type: array
+      service_name:
+        type: string
+      update_data:
+        type: string
     type: object
   entity.UserTranscriptCount:
     properties:
@@ -140,6 +137,44 @@ info:
   title: Voice Transcribe API
   version: "1.0"
 paths:
+  /api/v1/audio_segment:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of audio_segment
+      parameters:
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: number
+      - description: Limit for pagination
+        in: query
+        name: limit
+        type: number
+      - description: Filter by audio id
+        in: query
+        name: audio_id
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.AudioSegmentList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a list of audio_segment
+      tags:
+      - audio_segment
   /api/v1/audio_segment/{id}:
     get:
       consumes:
@@ -194,48 +229,6 @@ paths:
       summary: Delete a audio_segment
       tags:
       - audio_segment
-  /api/v1/audio_segment/list:
-    get:
-      consumes:
-      - application/json
-      description: Get a list of audio_segment
-      parameters:
-      - description: Offset for pagination
-        in: query
-        name: offset
-        type: number
-      - description: Limit for pagination
-        in: query
-        name: limit
-        type: number
-      - description: Filter by audio id
-        in: query
-        name: audio_id
-        type: integer
-      - description: Filter by user id
-        in: query
-        name: user_id
-        type: integer
-      - description: Filter by status
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/entity.AudioSegmentList'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/entity.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get a list of audio_segment
-      tags:
-      - audio_segment
   /api/v1/auth/login:
     post:
       consumes:
@@ -260,6 +253,27 @@ paths:
           schema:
             $ref: '#/definitions/entity.ErrorResponse'
       summary: Login
+      tags:
+      - auth
+  /api/v1/auth/one:
+    get:
+      consumes:
+      - application/json
+      description: Get a user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UserInfo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a user
       tags:
       - auth
   /api/v1/dashboard:
@@ -498,159 +512,6 @@ paths:
       summary: Upload Zip file
       tags:
       - audio
-  /api/v1/user/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Get a user by ID
-      parameters:
-      - description: User ID
-        in: query
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/entity.User'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/entity.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get a user by ID
-      tags:
-      - user
-  /api/v1/user/create:
-    post:
-      consumes:
-      - application/json
-      description: Create a new user
-      parameters:
-      - description: User object
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/entity.CreateUser'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/entity.SuccessResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/entity.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create a new user
-      tags:
-      - user
-  /api/v1/user/delete:
-    delete:
-      consumes:
-      - application/json
-      description: Delete a user
-      parameters:
-      - description: User ID
-        in: query
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/entity.SuccessResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/entity.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Delete a user
-      tags:
-      - user
-  /api/v1/user/list:
-    get:
-      consumes:
-      - application/json
-      description: Get a list of users
-      parameters:
-      - description: Offset for pagination
-        in: query
-        name: offset
-        type: number
-      - description: Limit for pagination
-        in: query
-        name: limit
-        type: number
-      - description: Search by username
-        in: query
-        name: username
-        type: string
-      - description: Filter by user role
-        in: query
-        name: role
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/entity.UserList'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/entity.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get a list of users
-      tags:
-      - user
-  /api/v1/user/update:
-    put:
-      consumes:
-      - application/json
-      description: Update a user
-      parameters:
-      - description: User ID
-        in: query
-        name: id
-        required: true
-        type: integer
-      - description: User object
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/entity.UpdateUserBody'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/entity.SuccessResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/entity.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Update a user
-      tags:
-      - user
 securityDefinitions:
   BearerAuth:
     in: header

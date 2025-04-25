@@ -1,10 +1,16 @@
 package entity
 
+type CreateAudioSegment struct {
+	AudioId   int    `json:"audio_id"`
+	FileName  string `json:"filename_name"`
+}
+
 type AudioSegment struct {
 	Id        int    `json:"id"`
 	AudioId   int    `json:"audio_id"`
 	AudioName string `json:"audio_name"`
 	Status    string `json:"status"`
+	FilePath  string `json:"file_path"`
 	CreatedAt string `json:"created_at"`
 }
 
@@ -14,7 +20,7 @@ type GetAudioSegmentReq struct {
 	Filter  Filter `json:"filter"`
 }
 type AudioSegmentList struct {
-	AudioSegments []AudioSegment `json:"audo_segments"`
+	AudioSegments []AudioSegment `json:"audio_segments"`
 	Count         int            `json:"count"`
 }
 

@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -28,17 +29,48 @@ func NewTranscriptRepo(pg *postgres.Postgres, config *config.Config, logger *log
 	}
 }
 
+func (r *TranscriptRepo) Create(ctx context.Context, req *entity.CreateTranscript) error {
+	query := `
+	INSERT INTO transcripts (segment_id, user_id, ai_text, transcribe_text, report_text)
+	VALUES ($1, $2, $3, $4, $5)
+	`
+
+	_, err := r.pg.Pool.Exec(ctx, query, req.SegmentId, req.AIText)
+	if err != nil {
+		return fmt.Errorf("failed to create transcript: %w", err)
+	}
+
+	return nil
+}
+
 func (r *TranscriptRepo) Update(ctx context.Context, req *entity.UpdateTranscript) error {
 	query := `
 	UPDATE
 		transcripts
-	SET
-		transcribe_text = $1,
-		updated_at = now()
-	WHERE
-		id = $2 AND deleted_at = 0`
+	SET`
 
-	_, err := r.pg.Pool.Exec(ctx, query, req.TranscriptText, req.Id)
+	var conditions []string
+	var args []interface{}
+
+	if req.TranscriptText != "" && req.TranscriptText != "string" {
+		conditions = append(conditions, " transcribe_text = $"+strconv.Itoa(len(args)+1))
+		args = append(args, req.TranscriptText)
+	}
+	if req.ReportText != "" && req.ReportText != "string" {
+		conditions = append(conditions, " report_text = $"+strconv.Itoa(len(args)+1))
+		args = append(args, req.ReportText)
+	}
+
+	if len(conditions) == 0 {
+		return errors.New("nothing to update")
+	}
+
+	conditions = append(conditions, " updated_at = now()")
+	query += strings.Join(conditions, ", ")
+	query += " WHERE id = $" + strconv.Itoa(len(args)+1) + " AND deleted_at = 0"
+	args = append(args, req.Id)
+
+	_, err := r.pg.Pool.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -77,6 +109,7 @@ func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcrip
 		u.username,
 		t.ai_text,
 		COALESCE(NULLIF(t.transcribe_text, ''), 'no_text') AS transcribe_text,
+		COALESCE(NULLIF(t.report_text, ''), 'no_text') AS report_text,
 		t.status,
 		t.created_at
 	FROM transcripts t
@@ -95,6 +128,7 @@ func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcrip
 		&transcript.Username,
 		&transcript.AIText,
 		&transcript.TranscriptText,
+		&transcript.ReportText,
 		&transcript.Status,
 		&createdAt)
 	if err != nil {
@@ -132,6 +166,7 @@ func (r *TranscriptRepo) GetList(ctx context.Context, req *entity.GetTranscriptR
 		u.username,
 		t.ai_text,
 		COALESCE(NULLIF(t.transcribe_text, ''), 'no_text') AS transcribe_text,
+		COALESCE(NULLIF(t.report_text, ''), 'no_text') AS report_text,
 		t.status,
 		t.created_at
 	FROM transcripts t
@@ -188,6 +223,7 @@ func (r *TranscriptRepo) GetList(ctx context.Context, req *entity.GetTranscriptR
 			&transcript.Username,
 			&transcript.AIText,
 			&transcript.TranscriptText,
+			&transcript.ReportText,
 			&transcript.Status,
 			&createdAt)
 		if err != nil {

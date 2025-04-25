@@ -6,11 +6,18 @@ type CreateUser struct {
 	Role     string `json:"role"`
 }
 
-type User struct {
-	Id        int    `json:"id"`
-	Username  string `json:"username"`
-	Role      string `json:"role"`
-	CreatedAt string `json:"created_at"`
+type UserInfo struct {
+	AgentID      string  `json:"agent_id"`
+	Login        string  `json:"login"`
+	Password     string  `json:"password"`
+	ServiceName  string  `json:"service_name"`
+	Name         string  `json:"name"`
+	FirstNumber  string  `json:"first_number"`
+	SecontNumber string  `json:"secont_number"`
+	Role         string  `json:"role"`
+	Image        *string `json:"image"`
+	CreateData   string  `json:"create_data"`
+	UpdateData   string  `json:"update_data"`
 }
 
 type UpdateUser struct {
@@ -30,16 +37,17 @@ type GetUserReq struct {
 	Filter   Filter `json:"filter"`
 }
 type UserList struct {
-	Users []User `json:"users"`
+	Users []UserInfo `json:"users"`
 	Count int    `json:"count"`
 }
 
 type LoginReq struct {
-	Username string `json:"username"`
+	Login    string `json:"login"`
 	Password string `json:"password"`
 }
 
 type LoginRes struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	Message string `json:"message"`
+	Role    string `json:"role"`
+	Token   string `json:"token"`
 }
