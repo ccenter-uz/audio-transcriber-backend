@@ -21,6 +21,9 @@ COPY --from=builder /app/config /app/config
 COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/internal/media /app/internal/media
 COPY --from=builder /app/internal/media/audio /app/internal/media/audio
+COPY --from=builder /app/internal/media/segments /app/internal/media/segments
+COPY --from=builder /app/internal/controller/http/casbin/model.conf ./internal/controller/http/casbin/
+COPY --from=builder /app/internal/controller/http/casbin/policy.csv ./internal/controller/http/casbin/
 
 RUN chmod +x /app/voice_transcribe
 

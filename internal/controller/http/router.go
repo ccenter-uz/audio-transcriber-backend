@@ -2,9 +2,11 @@ package http
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/casbin/casbin/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -14,6 +16,7 @@ import (
 	"github.com/mirjalilova/voice_transcribe/config"
 	_ "github.com/mirjalilova/voice_transcribe/docs"
 	"github.com/mirjalilova/voice_transcribe/internal/controller/http/handler"
+	middleware "github.com/mirjalilova/voice_transcribe/internal/controller/http/middlerware"
 	"github.com/mirjalilova/voice_transcribe/internal/usecase"
 	"github.com/mirjalilova/voice_transcribe/pkg/logger"
 )
@@ -65,7 +68,19 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 	engine.Use(cors.Default())
 	// Prometheus metrics
 	engine.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	engine.Static("/audios", "./internal/media/audio")
+
+	enforcer, err := casbin.NewEnforcer("./internal/controller/http/casbin/model.conf", "./internal/controller/http/casbin/policy.csv")
+	if err != nil {
+		slog.Error("Error while creating enforcer: ", err)
+	}
+
+	if enforcer == nil {
+		slog.Error("Enforcer is nil after initialization!")
+	} else {
+		slog.Info("Enforcer initialized successfully.")
+	}
+
+	engine.Static("/audios", "./internal/media/segments")
 
 	// Routes
 	router := engine.Group("/api/v1")
@@ -84,19 +99,18 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 		// transcript
 		router.GET("/transcript/list", handlerV1.GetTranscripts)
 		router.GET("/transcript/:id", handlerV1.GetTranscript)
-		router.PUT("/transcript/update", handlerV1.UpdateTranscript)
-		router.PUT("/transcript/update/status", handlerV1.UpdateStatus)
+		router.PUT("/transcript/update", middleware.NewAuth(enforcer), handlerV1.UpdateTranscript)
+		// router.PUT("/transcript/update/status", handlerV1.UpdateStatus)
 		router.DELETE("/transcript/delete", handlerV1.DeleteTranscript)
 
 		// audio_segment
 		router.GET("/audio_segment", handlerV1.GetAudioSegments)
 		router.GET("/audio_segment/:id", handlerV1.GetAudioSegment)
 		router.DELETE("/audio_segment/delete", handlerV1.DeleteAudioSegment)
-		// router.Static("/audios", "./internal/media/audio")
 
 		// dashboard
 		router.GET("/dashboard", handlerV1.GetTranscriptPercent)
-		router.GET("/dashboard/users", handlerV1.GetUsersTranscriptCount)
+		router.GET("/dashboard/user/:user_id", handlerV1.GetUserTranscriptStatictics)
 
 		// audio
 		router.POST("/upload-zip-audio", handlerV1.UploadZipAndExtractAudio)

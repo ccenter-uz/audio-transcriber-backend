@@ -1,8 +1,9 @@
 package entity
 
 type CreateAudioSegment struct {
-	AudioId   int    `json:"audio_id"`
-	FileName  string `json:"filename_name"`
+	AudioId  int     `json:"audio_id"`
+	FileName string  `json:"filename_name"`
+	Duration float32 `json:"duration"`
 }
 
 type AudioSegment struct {
@@ -32,8 +33,18 @@ type TranscriptPersent struct {
 	Percent           float64 `json:"percent"`
 }
 
-type UserTranscriptCount struct {
-	UserId        int    `json:"user_id"`
-	Username      string `json:"username"`
-	TotalSegments int    `json:"total_segments"`
+// type UserTranscriptCount struct {
+// 	UserId        int    `json:"user_id"`
+// 	Username      string `json:"username"`
+// 	TotalSegments int    `json:"total_segments"`
+// }
+
+type UserTranscriptStatictics struct {
+	Username         string  `json:"username"`
+	TotalAudioFiles  int     `json:"total_audio_files"`
+	TotalChunks      int     `json:"total_chunks"`
+	TotalMinutes     float32 `json:"total_minutes"`
+	WeeklyAudioFiles int     `json:"weekly_audio_files"`
+	WeeklyChunks     int     `json:"weekly_chunks"`
+	DailyChunks      string  `json:"daily_chunks"`
 }

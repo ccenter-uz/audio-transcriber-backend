@@ -113,7 +113,7 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 
 func isAudioFile(filename string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
-	return ext == ".mp3" || ext == ".wav" || ext == ".flac" || ext == ".ogg" || ext == ".m4a"
+	return ext == ".mp3" || ext == ".wav" || ext == ".flac" || ext == ".ogg" || ext == ".m4a" || ext == ".spx"
 }
 
 type Chunk struct {
@@ -212,6 +212,7 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 		err = h.UseCase.AudioSegmentRepo.Create(c, &entity.CreateAudioSegment{
 			AudioId:  audio_id,
 			FileName: chunk.ChunkID,
+			Duration: float32(chunk.End - chunk.Start),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create audio segment: %w", err)

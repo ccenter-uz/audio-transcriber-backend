@@ -40,9 +40,9 @@ func (h *Handler) GetAudioSegment(ctx *gin.Context) {
 		return
 	}
 
-	baseURL := "http://localhost:8080"
-	audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, "95c1faa2-4974-41b2-8a9d-3c6bd59f6fd9_chunk_135.wav")
-	audio_segment.FilePath = audioSegmentURL	
+	baseURL := "http://192.168.31.50:8080"
+	audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, audio_segment.FilePath)
+	audio_segment.FilePath = audioSegmentURL
 
 	slog.Info("AudioSegment retrieved successfully")
 	ctx.JSON(200, audio_segment)
@@ -56,8 +56,6 @@ func (h *Handler) GetAudioSegment(ctx *gin.Context) {
 // @Tags audio_segment
 // @Accept  json
 // @Produce  json
-// @Param offset query number false "Offset for pagination"
-// @Param limit query number false "Limit for pagination"
 // @Param audio_id query int false "Filter by audio id"
 // // @Param user_id query int false "Filter by user id"
 // @Param status query string false "Filter by status"
@@ -66,23 +64,9 @@ func (h *Handler) GetAudioSegment(ctx *gin.Context) {
 func (h *Handler) GetAudioSegments(ctx *gin.Context) {
 	var req entity.GetAudioSegmentReq
 
-	// Parse optional pagination parameters
-	pageStr := ctx.Query("offset")
-	limitStr := ctx.Query("limit")
-
-	// If page & limit are provided, validate them
-	limitValue, offsetValue, err := parsePaginationParams(ctx, limitStr, pageStr)
-	if err != nil {
-		ctx.JSON(400, gin.H{"Error": err.Error()})
-		slog.Error("Error parsing pagination parameters: ", err)
-		return
-	}
-
 	// Assign other filters
 	req.AudioId = ctx.Query("audio_id")
 	req.Status = ctx.Query("status")
-	req.Filter.Limit = limitValue
-	req.Filter.Offset = offsetValue
 
 	// Fetch audio_segment
 	audio_segment, err := h.UseCase.AudioSegmentRepo.GetList(ctx, &req)
@@ -91,7 +75,14 @@ func (h *Handler) GetAudioSegments(ctx *gin.Context) {
 		return
 	}
 
+	for i := range audio_segment.AudioSegments {
+		baseURL := "http://192.168.31.50:8080"
+		audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, audio_segment.AudioSegments[i].FilePath)
+		audio_segment.AudioSegments[i].FilePath = audioSegmentURL
+	}
+
 	// Return response
+	slog.Info("AudioSegment retrieved successfully")
 	ctx.JSON(http.StatusOK, audio_segment)
 }
 
@@ -149,20 +140,22 @@ func (h *Handler) GetTranscriptPercent(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-// GetUsersTranscriptCount godoc
-// @Router /api/v1/dashboard/users [get]
-// @Summary Get a list number of transcripts of users
-// @Description Get a list number of transcripts of users
+// GetUserTranscriptStatictics godoc
+// @Router /api/v1/dashboard/user/{user_id} [get]
+// @Summary Get the user dashboard
+// @Description Get the user dashboard
 // @Security BearerAuth
 // @Tags dashboard
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} []entity.UserTranscriptCount
+// @Param user_id path string true "user id"
+// @Success 200 {object} entity.UserTranscriptStatictics
 // @Failure 400 {object} entity.ErrorResponse
-func (h *Handler) GetUsersTranscriptCount(ctx *gin.Context) {
-	res, err := h.UseCase.AudioSegmentRepo.GetUserTranscriptCount(ctx)
+func (h *Handler) GetUserTranscriptStatictics(ctx *gin.Context) {
+	userId := ctx.Param("user_id")
+	res, err := h.UseCase.AudioSegmentRepo.GetUserTranscriptStatictics(ctx, userId)
 	if h.HandleDbError(ctx, err, "Error getting number of transcripts of users") {
-		slog.Error("GetUsersTranscriptCount error", slog.String("error", err.Error()))
+		slog.Error("GetUserTranscriptStatictics error", slog.String("error", err.Error()))
 		return
 	}
 

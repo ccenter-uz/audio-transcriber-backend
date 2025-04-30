@@ -5,6 +5,7 @@ services:
     volumes:
       - ./internal/media:/app/internal/media 
       - ./internal/media/audio:/app/internal/media/audio
+      - ./internal/media/segments:/app/internal/media/segments
     env_file:
       - .env
     ports:

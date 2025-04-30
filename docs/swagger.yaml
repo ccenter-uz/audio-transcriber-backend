@@ -64,7 +64,7 @@ definitions:
       transcribe_text:
         type: string
       user_id:
-        type: integer
+        type: string
       username:
         type: string
     type: object
@@ -101,7 +101,7 @@ definitions:
     properties:
       agent_id:
         type: string
-      create_data:
+      create_date:
         type: string
       first_number:
         type: string
@@ -115,21 +115,25 @@ definitions:
         type: string
       role:
         type: string
-      secont_number:
-        type: string
       service_name:
         type: string
-      update_data:
-        type: string
     type: object
-  entity.UserTranscriptCount:
+  entity.UserTranscriptStatictics:
     properties:
-      total_segments:
+      daily_chunks:
+        type: string
+      total_audio_files:
         type: integer
-      user_id:
+      total_chunks:
         type: integer
+      total_minutes:
+        type: number
       username:
         type: string
+      weekly_audio_files:
+        type: integer
+      weekly_chunks:
+        type: integer
     type: object
 info:
   contact: {}
@@ -143,14 +147,6 @@ paths:
       - application/json
       description: Get a list of audio_segment
       parameters:
-      - description: Offset for pagination
-        in: query
-        name: offset
-        type: number
-      - description: Limit for pagination
-        in: query
-        name: limit
-        type: number
       - description: Filter by audio id
         in: query
         name: audio_id
@@ -299,27 +295,31 @@ paths:
       summary: Get a list of audio percent
       tags:
       - dashboard
-  /api/v1/dashboard/users:
+  /api/v1/dashboard/user/{user_id}:
     get:
       consumes:
       - application/json
-      description: Get a list number of transcripts of users
+      description: Get the user dashboard
+      parameters:
+      - description: user id
+        in: path
+        name: user_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/entity.UserTranscriptCount'
-            type: array
+            $ref: '#/definitions/entity.UserTranscriptStatictics'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/entity.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get a list number of transcripts of users
+      summary: Get the user dashboard
       tags:
       - dashboard
   /api/v1/transcript/{id}:
@@ -328,8 +328,8 @@ paths:
       - application/json
       description: Get a transcript by ID
       parameters:
-      - description: Transcript ID
-        in: query
+      - description: Chunk ID
+        in: path
         name: id
         required: true
         type: integer
@@ -355,7 +355,7 @@ paths:
       - application/json
       description: Delete a transcript
       parameters:
-      - description: Transcript ID
+      - description: Chunk ID
         in: query
         name: id
         required: true
@@ -424,7 +424,7 @@ paths:
       - application/json
       description: Update a transcript
       parameters:
-      - description: Transcript ID
+      - description: Chunk ID
         in: query
         name: id
         required: true
@@ -435,33 +435,6 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/entity.UpdateTranscriptBody'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/entity.SuccessResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/entity.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Update a transcript
-      tags:
-      - transcript
-  /api/v1/transcript/update/status:
-    put:
-      consumes:
-      - application/json
-      description: Update a transcript
-      parameters:
-      - description: Transcript ID
-        in: query
-        name: id
-        required: true
-        type: integer
       produces:
       - application/json
       responses:

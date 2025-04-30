@@ -13,11 +13,9 @@ type UserInfo struct {
 	ServiceName  string  `json:"service_name"`
 	Name         string  `json:"name"`
 	FirstNumber  string  `json:"first_number"`
-	SecontNumber string  `json:"secont_number"`
 	Role         string  `json:"role"`
 	Image        *string `json:"image"`
-	CreateData   string  `json:"create_data"`
-	UpdateData   string  `json:"update_data"`
+	CreateDate   string  `json:"create_date"`
 }
 
 type UpdateUser struct {
@@ -38,7 +36,7 @@ type GetUserReq struct {
 }
 type UserList struct {
 	Users []UserInfo `json:"users"`
-	Count int    `json:"count"`
+	Count int        `json:"count"`
 }
 
 type LoginReq struct {

@@ -1,14 +1,18 @@
 CREATE TYPE file_status AS ENUM('pending', 'processing', 'done', 'error');
 
-CREATE TYPE transcript_status AS ENUM('ready', 'done');
+CREATE TYPE transcript_status AS ENUM('ready', 'invalid', 'done');
 
 CREATE TYPE role AS ENUM('admin', 'transcriber');
 
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
+    id UUID NOT NULL PRIMARY KEY,
+    login VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL, 
-    role role NOT NULL,         
+    role role NOT NULL DEFAULT 'transcriber',  
+    username VARCHAR(100) NOT NULL,       
+    first_number VARCHAR(13) NOT NULL,
+    service_name VARCHAR(50),
+    image_url TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     deleted_at BIGINT NOT NULL DEFAULT 0,
@@ -33,6 +37,7 @@ CREATE TABLE audio_file_segments (
     id SERIAL PRIMARY KEY,
     audio_id INT NOT NULL REFERENCES audio_files(id),
     filename VARCHAR(100) NOT NULL,
+    duration FLOAT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     deleted_at BIGINT NOT NULL DEFAULT 0
@@ -50,7 +55,9 @@ CREATE TABLE transcripts (
     status transcript_status NOT NULL DEFAULT 'ready',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    deleted_at BIGINT NOT NULL DEFAULT 0
+    deleted_at BIGINT NOT NULL DEFAULT 0,
+
+    UNIQUE (segment_id, deleted_at) 
 );
 
 CREATE OR REPLACE FUNCTION calculate_transcription_percentage() 
@@ -78,20 +85,100 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-INSERT INTO audio_files (filename, file_path) VALUES
-    ('audio1', 'path/audio1'),
-    ('audio2', 'path/audio2'),
-    ('audio3', 'path/audio3');
+CREATE OR REPLACE FUNCTION get_user_transcription_statistics(p_user_id UUID)
+RETURNS TABLE (
+    total_audio_files BIGINT,
+    total_segments BIGINT,
+    total_minutes BIGINT,
+    weekly_audio_files BIGINT,
+    weekly_segments BIGINT,
+    daily_segments JSONB
+) AS $$
+DECLARE
+    user_created_at DATE;
+BEGIN
+    SELECT created_at::DATE INTO user_created_at FROM users WHERE id = p_user_id;
+
+    RETURN QUERY
+    WITH user_transcripts AS (
+        SELECT 
+            t.id AS transcript_id,
+            t.created_at::DATE AS transcript_created_at,
+            afs.audio_id,
+            afs.id AS segment_id,
+            afs.duration
+        FROM 
+            transcripts t
+        JOIN 
+            audio_file_segments afs ON t.segment_id = afs.id
+        JOIN 
+            audio_files af ON af.id = afs.audio_id
+        WHERE 
+            t.user_id = p_user_id
+            AND t.deleted_at = 0
+            AND af.deleted_at = 0
+            AND afs.deleted_at = 0
+            AND t.status = 'done'
+    ),
+    this_week AS (
+        SELECT 
+            audio_id,
+            segment_id
+        FROM 
+            user_transcripts
+        WHERE 
+            transcript_created_at >= date_trunc('week', CURRENT_DATE)
+    ),
+    daily_counts AS (
+        SELECT
+            d.day,
+            COALESCE(COUNT(ut.transcript_id), 0) AS segments_per_day
+        FROM (
+            SELECT generate_series(user_created_at, CURRENT_DATE, '1 day') AS day
+        ) d
+        LEFT JOIN user_transcripts ut
+            ON ut.transcript_created_at = d.day
+        GROUP BY d.day
+    )
+    SELECT 
+        (SELECT COUNT(DISTINCT audio_id) FROM user_transcripts) AS total_audio_files,
+        (SELECT COUNT(*) FROM user_transcripts) AS total_segments,
+        (SELECT COALESCE(CEIL(SUM(duration) / 60)::BIGINT, 0) FROM user_transcripts) AS total_minutes,
+        (SELECT COUNT(DISTINCT audio_id) FROM this_week) AS weekly_audio_files,
+        (SELECT COUNT(*) FROM this_week) AS weekly_segments,
+        (SELECT jsonb_object_agg(to_char(day, 'YYYY-MM-DD'), segments_per_day) FROM daily_counts) AS daily_segments;
+END;
+$$ LANGUAGE plpgsql;
 
 
-INSERT INTO audio_file_segments (audio_id) VALUES
-    ('1'),
-    ('1'),
-    ('3');
 
-INSERT INTO transcripts (segment_id, user_id, ai_text) VALUES
-    (2, 2, 'qdhgwqjqwuhjdh'),
-    (3, 2, 'wqjdhijqwhdj qiwhdkj qwkjhqkjwh'),
-    (4, 2, 'qhjwn e wq ehwq ejqh djhdjjhm ');
+CREATE OR REPLACE FUNCTION update_audio_file_status_from_transcripts()
+RETURNS TRIGGER AS $$
+DECLARE
+    segment_audio_id INT;
+BEGIN
+    SELECT afs.audio_id INTO segment_audio_id
+    FROM audio_file_segments afs
+    WHERE afs.id = NEW.segment_id AND afs.deleted_at = 0;
+
+    IF segment_audio_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    IF NEW.status = 'done' THEN
+        UPDATE audio_files
+        SET status = 'processing',
+            updated_at = NOW()
+        WHERE id = segment_audio_id AND status != 'done';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 
+CREATE TRIGGER trg_update_audio_status
+AFTER INSERT OR UPDATE ON transcripts
+FOR EACH ROW
+WHEN (NEW.status = 'done')
+EXECUTE FUNCTION update_audio_file_status_from_transcripts();

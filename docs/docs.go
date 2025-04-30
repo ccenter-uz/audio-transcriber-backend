@@ -35,18 +35,6 @@ const docTemplate = `{
                 "summary": "Get a list of audio_segment",
                 "parameters": [
                     {
-                        "type": "number",
-                        "description": "Offset for pagination",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "number",
-                        "description": "Limit for pagination",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "description": "Filter by audio id",
                         "name": "audio_id",
@@ -272,14 +260,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/dashboard/users": {
+        "/api/v1/dashboard/user/{user_id}": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get a list number of transcripts of users",
+                "description": "Get the user dashboard",
                 "consumes": [
                     "application/json"
                 ],
@@ -289,15 +277,21 @@ const docTemplate = `{
                 "tags": [
                     "dashboard"
                 ],
-                "summary": "Get a list number of transcripts of users",
+                "summary": "Get the user dashboard",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "user id",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entity.UserTranscriptCount"
-                            }
+                            "$ref": "#/definitions/entity.UserTranscriptStatictics"
                         }
                     },
                     "400": {
@@ -330,7 +324,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Transcript ID",
+                        "description": "Chunk ID",
                         "name": "id",
                         "in": "query",
                         "required": true
@@ -439,7 +433,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Transcript ID",
+                        "description": "Chunk ID",
                         "name": "id",
                         "in": "query",
                         "required": true
@@ -452,49 +446,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/entity.UpdateTranscriptBody"
                         }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/entity.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/entity.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/transcript/update/status": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update a transcript",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "transcript"
-                ],
-                "summary": "Update a transcript",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Transcript ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -534,9 +485,9 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Transcript ID",
+                        "description": "Chunk ID",
                         "name": "id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -707,7 +658,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "username": {
                     "type": "string"
@@ -765,7 +716,7 @@ const docTemplate = `{
                 "agent_id": {
                     "type": "string"
                 },
-                "create_data": {
+                "create_date": {
                     "type": "string"
                 },
                 "first_number": {
@@ -786,28 +737,34 @@ const docTemplate = `{
                 "role": {
                     "type": "string"
                 },
-                "secont_number": {
-                    "type": "string"
-                },
                 "service_name": {
-                    "type": "string"
-                },
-                "update_data": {
                     "type": "string"
                 }
             }
         },
-        "entity.UserTranscriptCount": {
+        "entity.UserTranscriptStatictics": {
             "type": "object",
             "properties": {
-                "total_segments": {
+                "daily_chunks": {
+                    "type": "string"
+                },
+                "total_audio_files": {
                     "type": "integer"
                 },
-                "user_id": {
+                "total_chunks": {
                     "type": "integer"
+                },
+                "total_minutes": {
+                    "type": "number"
                 },
                 "username": {
                     "type": "string"
+                },
+                "weekly_audio_files": {
+                    "type": "integer"
+                },
+                "weekly_chunks": {
+                    "type": "integer"
                 }
             }
         }

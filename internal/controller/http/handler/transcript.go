@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
 	"github.com/mirjalilova/voice_transcribe/config"
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
 )
@@ -18,12 +19,11 @@ import (
 // @Tags transcript
 // @Accept  json
 // @Produce  json
-// @Param id query int true "Transcript ID"
+// @Param id path int true "Chunk ID"
 // @Success 200 {object} entity.Transcript
 // @Failure 400 {object} entity.ErrorResponse
 func (h *Handler) GetTranscript(ctx *gin.Context) {
-
-	id := ctx.Query("id")
+	id := ctx.Param("id")
 	intId, err := strconv.Atoi(id)
 	if err != nil {
 		slog.Error("GetTranscript error", slog.String("error", err.Error()))
@@ -31,6 +31,7 @@ func (h *Handler) GetTranscript(ctx *gin.Context) {
 			Code:    config.ErrorBadRequest,
 			Message: "Invalid transcript ID",
 		})
+		return
 	}
 
 	transcript, err := h.UseCase.TranscriptRepo.GetById(ctx, intId)
@@ -99,7 +100,7 @@ func (h *Handler) GetTranscripts(ctx *gin.Context) {
 // @Tags transcript
 // @Accept  json
 // @Produce  json
-// @Param id query int true "Transcript ID"
+// @Param id query int true "Chunk ID"
 // @Param transcript body entity.UpdateTranscriptBody true "Transcript object"
 // @Success 200 {object} entity.SuccessResponse
 // @Failure 400 {object} entity.ErrorResponse
@@ -128,13 +129,31 @@ func (h *Handler) UpdateTranscript(ctx *gin.Context) {
 		return
 	}
 
+	var user_id string
+	claims, exists := ctx.Get("claims")
+	if !exists {
+		slog.Error("error", "Unauthorized")
+		ctx.JSON(401, entity.ErrorResponse{
+			Code:    config.ErrorUnauthorized,
+			Message: "Unauthorizedd",
+		})
+		return
+	} else {
+		user_id = claims.(jwt.MapClaims)["id"].(string)
+	}
+
 	err = h.UseCase.TranscriptRepo.Update(ctx, &entity.UpdateTranscript{
 		Id:             intId,
 		TranscriptText: body.TranscriptText,
+		ReportText:     body.ReportText,
+		UserID:         &user_id,
 	})
 	if err != nil {
 		slog.Error("UpdateTranscript error", slog.String("error", err.Error()))
-		h.ReturnError(ctx, config.ErrorBadRequest, "Error updating transcript", 400)
+		ctx.JSON(400, entity.ErrorResponse{
+			Code:    config.ErrorBadRequest,
+			Message: "Error updating transcript",
+		})
 		return
 	}
 
@@ -144,41 +163,43 @@ func (h *Handler) UpdateTranscript(ctx *gin.Context) {
 	})
 }
 
-// UpdateStatus godoc
-// @Router /api/v1/transcript/update/status [put]
-// @Summary Update a transcript
-// @Description Update a transcript
-// @Security BearerAuth
-// @Tags transcript
-// @Accept  json
-// @Produce  json
-// @Param id query int true "Transcript ID"
-// @Success 200 {object} entity.SuccessResponse
-// @Failure 400 {object} entity.ErrorResponse
-func (h *Handler) UpdateStatus(ctx *gin.Context) {
-	
-	id := ctx.Query("id")
-	intId, err := strconv.Atoi(id)
-	if err != nil {
-		slog.Error("UpdateStatus error", slog.String("error", err.Error()))
-		ctx.JSON(400, entity.ErrorResponse{
-			Code:    config.ErrorBadRequest,
-			Message: "Invalid ustranscripter ID",
-		})
-	}
+// // UpdateStatus godoc
+// // @Router /api/v1/transcript/update/status [put]
+// // @Summary Update a transcript
+// // @Description Update a transcript
+// // @Security BearerAuth
+// // @Tags transcript
+// // @Accept  json
+// // @Produce  json
+// // @Param id query int true "Chunk ID"
+// // @Success 200 {object} entity.SuccessResponse
+// // @Failure 400 {object} entity.ErrorResponse
+// func (h *Handler) UpdateStatus(ctx *gin.Context) {
 
-	err = h.UseCase.TranscriptRepo.UpdateStatus(ctx, &intId)
-	if err != nil {
-		slog.Error("UpdateStatus error", slog.String("error", err.Error()))
-		h.ReturnError(ctx, config.ErrorBadRequest, "Error updating transcript status", 400)
-		return
-	}
+// 	id := ctx.Query("id")
+// 	intId, err := strconv.Atoi(id)
+// 	if err != nil {
+// 		slog.Error("UpdateStatus error", slog.String("error", err.Error()))
+// 		ctx.JSON(400, entity.ErrorResponse{
+// 			Code:    config.ErrorBadRequest,
+// 			Message: "Invalid ustranscripter ID",
+// 		})
+// 	}
 
-	slog.Info("Transcript status updated successfully")
-	ctx.JSON(200, gin.H{
-		"message": "Transcript status updated successfully",
-	})
-}
+// 	user_id
+
+// 	err = h.UseCase.TranscriptRepo.UpdateStatus(ctx, &intId)
+// 	if err != nil {
+// 		slog.Error("UpdateStatus error", slog.String("error", err.Error()))
+// 		h.ReturnError(ctx, config.ErrorBadRequest, "Error updating transcript status", 400)
+// 		return
+// 	}
+
+// 	slog.Info("Transcript status updated successfully")
+// 	ctx.JSON(200, gin.H{
+// 		"message": "Transcript status updated successfully",
+// 	})
+// }
 
 // DeleteTranscript godoc
 // @Router /api/v1/transcript/delete [delete]
@@ -188,7 +209,7 @@ func (h *Handler) UpdateStatus(ctx *gin.Context) {
 // @Tags transcript
 // @Accept  json
 // @Produce  json
-// @Param id query int true "Transcript ID"
+// @Param id query int true "Chunk ID"
 // @Success 200 {object} entity.SuccessResponse
 // @Failure 400 {object} entity.ErrorResponse
 func (h *Handler) DeleteTranscript(ctx *gin.Context) {
