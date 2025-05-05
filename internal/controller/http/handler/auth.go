@@ -22,6 +22,7 @@ import (
 // @Tags auth
 // @Accept  json
 // @Produce  json
+
 // @Param body body entity.LoginReq true "User"
 // @Success 200 {object} entity.SuccessResponse
 // @Failure 400 {object} entity.ErrorResponse

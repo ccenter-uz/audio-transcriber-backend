@@ -80,7 +80,8 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 		slog.Info("Enforcer initialized successfully.")
 	}
 
-	engine.Static("/audios", "./internal/media/segments")
+	engine.Static("/audios", "./internal/media/audio")
+	engine.Static("/chunks", "./internal/media/segments")
 
 	// Routes
 	router := engine.Group("/api/v1")
@@ -111,6 +112,7 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 		// dashboard
 		router.GET("/dashboard", handlerV1.GetTranscriptPercent)
 		router.GET("/dashboard/user/:user_id", handlerV1.GetUserTranscriptStatictics)
+		router.GET("/dataset_viewer", handlerV1.DatasetViewer)
 
 		// audio
 		router.POST("/upload-zip-audio", handlerV1.UploadZipAndExtractAudio)

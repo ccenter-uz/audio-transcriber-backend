@@ -197,3 +197,54 @@ func (h *Handler) GetUserTranscriptStatictics(ctx *gin.Context) {
 	// Return response
 	ctx.JSON(http.StatusOK, res)
 }
+
+// DatasetViewer godoc
+// @Router /api/v1/dataset_viewer [get]
+// @Summary Get a list of dataset_viewer
+// @Description Get a list of dataset_viewer
+// @Security BearerAuth
+// @Tags dashboard
+// @Accept  json
+// @Produce  json
+// @Param offset query number false "Offset for pagination"
+// @Param limit query number false "Limit for pagination"
+// @Success 200 {object} entity.AudioSegmentList
+// @Failure 400 {object} entity.ErrorResponse
+func (h *Handler) DatasetViewer(ctx *gin.Context) {
+	var req entity.Filter
+
+	// Parse optional pagination parameters
+	pageStr := ctx.Query("offset")
+	limitStr := ctx.Query("limit")
+
+	// If page & limit are provided, validate them
+	limitValue, offsetValue, err := parsePaginationParams(ctx, limitStr, pageStr)
+	if err != nil {
+		ctx.JSON(400, gin.H{"Error": err.Error()})
+		slog.Error("Error parsing pagination parameters: ", err)
+		return
+	}
+	req.Limit = limitValue
+	req.Offset = offsetValue
+
+	// Fetch audio_segment
+	dataset_viewer, err := h.UseCase.AudioSegmentRepo.DatasetViewer(ctx, &req)
+	if h.HandleDbError(ctx, err, "Error getting audio_segment") {
+		slog.Error("GetAudioSegments error", slog.String("error", err.Error()))
+		return
+	}
+
+	baseURL := "http://192.168.31.50:8080"
+	for i := range *dataset_viewer {
+		audioSegmentURL := fmt.Sprintf("%s/chunks/%s", baseURL, (*dataset_viewer)[i].ChunkUrl)
+		(*dataset_viewer)[i].ChunkUrl = audioSegmentURL
+	}
+	for i := range *dataset_viewer {
+		audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, (*dataset_viewer)[i].AudioUrl)
+		(*dataset_viewer)[i].AudioUrl = audioSegmentURL
+	}
+
+	// Return response
+	slog.Info("AudioSegment retrieved successfully")
+	ctx.JSON(http.StatusOK, dataset_viewer)
+}
