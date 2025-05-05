@@ -1,0 +1,24 @@
+p, unauthorized, /,                                GET
+
+p, unauthorized, /api/v1/auth/login,               GET
+p, unauthorized, /api/v1/auth/one,                 GET
+
+p, transcriber,  /api/v1/transcript/list,          GET
+p, transcriber,  /api/v1/transcript/:id,           GET
+p, transcriber,  /api/v1/transcript/delete,        GET
+p, transcriber,  /api/v1/transcript/update,        PUT
+
+p, transcriber,  /api/v1/audio_segment,            GET
+p, transcriber,  /api/v1/audio_segment/:id,        GET
+
+
+p, admin,       /api/v1/dashboard,                 GET
+p, transcriber, /api/v1/dashboard/user/:user_id,   GET
+
+p, admin,       /api/v1/audio_segment/delete,      GET
+
+
+p, admin, *, *
+
+g, transcriber, unauthorized
+g, admin, transcriber

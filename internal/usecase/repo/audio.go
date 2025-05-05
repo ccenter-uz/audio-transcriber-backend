@@ -36,3 +36,15 @@ func (r *AudioFileRepo) Create(ctx context.Context, req *entity.CreateAudioFile)
 
 	return &id, nil
 }
+
+func (r *AudioFileRepo) GetById(ctx context.Context, id int) (*entity.AudioFile, error) {
+	query := `
+	SELECT id, filename, status, user_id FROM audio_files WHERE id = $1`
+	audioFile := &entity.AudioFile{}
+	err := r.pg.Pool.QueryRow(ctx, query, id).Scan(&audioFile.ID, &audioFile.Filename, &audioFile.Status, &audioFile.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return audioFile, nil
+}

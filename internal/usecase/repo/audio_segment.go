@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"math"
 	"strconv"
@@ -35,20 +36,20 @@ func (r *AudioSegmentRepo) Create(ctx context.Context, req *entity.CreateAudioSe
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() {
-		if err := tr.Rollback(ctx); err != nil {
-			r.logger.Error("failed to rollback transaction: %v", err)
-		}
-	}()
+	// defer func() {
+	// 	if err := tr.Rollback(ctx); err != nil {
+	// 		// r.logger.Error("failed to rollback transaction: %v", err)
+	// 	}
+	// }()
 
 	query := `
-	INSERT INTO audio_file_segments (audio_id, filename)
-	VALUES ($1, $2)
+	INSERT INTO audio_file_segments (audio_id, filename, duration)
+	VALUES ($1, $2, $3)
 	RETURNING id
 	`
 
 	var id int
-	_ = tr.QueryRow(ctx, query, req.AudioId, req.FileName).Scan(&id)
+	_ = tr.QueryRow(ctx, query, req.AudioId, req.FileName, req.Duration).Scan(&id)
 	if err != nil {
 		tr.Rollback(ctx)
 		return fmt.Errorf("failed to create audio segment: %w", err)
@@ -111,8 +112,10 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 		s.id,
 		s.audio_id,
 		a.filename,
+		s.filename,
 		t.status,
-		s.created_at
+		s.created_at,
+		a.id
 	FROM 
 		audio_file_segments s
 	JOIN 
@@ -122,7 +125,6 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	WHERE 
 		a.deleted_at = 0 AND s.deleted_at = 0
 	`
-
 	var conditions []string
 	var args []interface{}
 
@@ -136,21 +138,24 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 		args = append(args, req.Status)
 	}
 
-	if req.Status == "" && req.AudioId == "" {
-		conditions = append(conditions, "a.status = 'processing'")
-		conditions = append(conditions, "t.status = 'ready'")
-	}
-
 	if len(conditions) > 0 {
 		query += " AND " + strings.Join(conditions, " AND ")
+	} else if req.UserID != "" {
+		query += " AND a.user_id = $" + strconv.Itoa(len(args)+1) + " AND a.status = 'processing' "
+		args = append(args, req.UserID)
+	} else {
+		query += `
+		AND a.id = (
+			SELECT id FROM audio_files
+			WHERE status = 'pending' AND deleted_at = 0
+			ORDER BY created_at ASC
+			LIMIT 1
+		)
+		AND t.status = 'ready'
+		`
 	}
 
-	query += ` ORDER BY s.created_at DESC OFFSET $` + strconv.Itoa(len(args)+1) + ` LIMIT $` + strconv.Itoa(len(args)+2)
-
-	args = append(args, req.Filter.Offset, req.Filter.Limit)
-
-	fmt.Println("Query:", query)
-	fmt.Println("Args:", args)
+	query += ` ORDER BY s.id `
 
 	rows, err := r.pg.Pool.Query(ctx, query, args...)
 	if err != nil {
@@ -158,24 +163,52 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	}
 	defer rows.Close()
 
+	var audioId int
 	audioSegments := entity.AudioSegmentList{}
 	for rows.Next() {
 		var createdAt time.Time
 		var count int
+		var audioName sql.NullString
+		var status sql.NullString
 		transcript := entity.AudioSegment{}
 		err := rows.Scan(
 			&count,
 			&transcript.Id,
 			&transcript.AudioId,
-			&transcript.AudioName,
-			&transcript.Status,
-			&createdAt)
+			&audioName,
+			&transcript.FilePath,
+			&status,
+			&createdAt,
+			&audioId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan segment: %w", err)
+		}
+
+		if audioName.Valid {
+			transcript.AudioName = audioName.String
+		} else {
+			transcript.AudioName = ""
+		}
+
+		if status.Valid {
+			transcript.Status = status.String
+		} else {
+			transcript.Status = ""
 		}
 		transcript.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
 		audioSegments.AudioSegments = append(audioSegments.AudioSegments, transcript)
 		audioSegments.Count = count
+	}
+
+	query = `SELECT user_id FROM audio_files WHERE id = $1 AND deleted_at = 0`
+	var userId string
+
+	err = r.pg.Pool.QueryRow(ctx, query, audioId).Scan(&userId)
+	if userId == "" {
+		_, err = r.pg.Pool.Exec(ctx, "UPDATE audio_files SET status = 'processing', user_id = $2 WHERE id = $1 AND deleted_at = 0", audioId, req.UIserId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update file: %w", err)
+		}
 	}
 
 	return &audioSegments, nil
@@ -225,44 +258,75 @@ func (r *AudioSegmentRepo) GetTranscriptPercent(ctx context.Context) (*[]entity.
 	return &res, nil
 }
 
-func (r *AudioSegmentRepo) GetUserTranscriptCount(ctx context.Context) (*[]entity.UserTranscriptCount, error) {
-	query := `SELECT 
-				t.user_id,
-				u.username,
-				COUNT(t.id) AS done_count
-			FROM 
-				transcripts t 
-			JOIN
-				users u ON t.user_id = u.id
-			WHERE 
-				t.status = 'done'
-				AND t.transcribe_text IS NOT NULL
-				AND TRIM(t.transcribe_text) <> ''
-				AND t.deleted_at = 0
-			GROUP BY 
-				t.user_id, u.username
-`
+func (r *AudioSegmentRepo) GetUserTranscriptStatictics(ctx context.Context, user_id string) (*entity.UserTranscriptStatictics, error) {
+	res := entity.UserTranscriptStatictics{}
 
-	rows, err := r.pg.Pool.Query(ctx, query)
+	query := `SELECT username FROM users WHERE id = $1`
+
+	err := r.pg.Pool.QueryRow(ctx, query, user_id).Scan(&res.Username)
 	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	res := []entity.UserTranscriptCount{}
-	for rows.Next() {
-		reps := entity.UserTranscriptCount{}
-		err := rows.Scan(
-			&reps.UserId,
-			&reps.Username,
-			&reps.TotalSegments,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan user transcript count: %w", err)
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found: %w", err)
 		}
+		return nil, fmt.Errorf("failed to get username: %w", err)
+	}
 
-		res = append(res, reps)
+	query = `SELECT * FROM get_user_transcription_statistics($1)`
+
+	err = r.pg.Pool.QueryRow(ctx, query, user_id).Scan(
+		&res.TotalAudioFiles,
+		&res.TotalChunks,
+		&res.TotalMinutes,
+		&res.WeeklyAudioFiles,
+		&res.WeeklyChunks,
+		&res.DailyChunks,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan user transcript statistics: %w", err)
 	}
 
 	return &res, nil
 }
+
+// func (r *AudioSegmentRepo) GetUserTranscriptCount(ctx context.Context) (*[]entity.UserTranscriptCount, error) {
+// 	query := `SELECT
+// 				t.user_id,
+// 				u.username,
+// 				COUNT(t.id) AS done_count
+// 			FROM
+// 				transcripts t
+// 			JOIN
+// 				users u ON t.user_id = u.id
+// 			WHERE
+// 				t.status = 'done'
+// 				AND t.transcribe_text IS NOT NULL
+// 				AND TRIM(t.transcribe_text) <> ''
+// 				AND t.deleted_at = 0
+// 			GROUP BY
+// 				t.user_id, u.username
+// `
+
+// 	rows, err := r.pg.Pool.Query(ctx, query)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer rows.Close()
+
+// 	res := []entity.UserTranscriptCount{}
+// 	for rows.Next() {
+// 		reps := entity.UserTranscriptCount{}
+// 		err := rows.Scan(
+// 			&reps.UserId,
+// 			&reps.Username,
+// 			&reps.TotalSegments,
+// 		)
+// 		if err != nil {
+// 			return nil, fmt.Errorf("failed to scan user transcript count: %w", err)
+// 		}
+
+// 		res = append(res, reps)
+// 	}
+
+// 	return &res, nil
+// }

@@ -2,8 +2,8 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -47,10 +47,20 @@ func (r *TranscriptRepo) Update(ctx context.Context, req *entity.UpdateTranscrip
 	query := `
 	UPDATE
 		transcripts
-	SET`
+	SET
+		status = 'done',
+		`
 
 	var conditions []string
 	var args []interface{}
+
+	tr, err := r.pg.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	conditions = append(conditions, " user_id = $"+strconv.Itoa(len(args)+1))
+	args = append(args, req.UserID)
 
 	if req.TranscriptText != "" && req.TranscriptText != "string" {
 		conditions = append(conditions, " transcribe_text = $"+strconv.Itoa(len(args)+1))
@@ -62,39 +72,57 @@ func (r *TranscriptRepo) Update(ctx context.Context, req *entity.UpdateTranscrip
 	}
 
 	if len(conditions) == 0 {
-		return errors.New("nothing to update")
+		slog.Warn("nothing to update")
+		return nil
 	}
 
 	conditions = append(conditions, " updated_at = now()")
 	query += strings.Join(conditions, ", ")
-	query += " WHERE id = $" + strconv.Itoa(len(args)+1) + " AND deleted_at = 0"
+	query += " WHERE segment_id = $" + strconv.Itoa(len(args)+1) + " AND deleted_at = 0"
 	args = append(args, req.Id)
 
-	_, err := r.pg.Pool.Exec(ctx, query, args...)
+	_, err = tr.Exec(ctx, query, args...)
 	if err != nil {
-		return err
+		tr.Rollback(ctx)
+		return fmt.Errorf("failed to update transcript: %w", err)
+	}
+
+	if req.ReportText != "" && req.ReportText != "string" {
+
+		query = `UPDATE transcripts SET status = 'invalid', updated_at = now() WHERE segment_id = $1 AND deleted_at = 0`
+		_, err = tr.Exec(ctx, query, req.Id)
+		if err != nil {
+			tr.Rollback(ctx)
+			return fmt.Errorf("failed to update transcript status: %w", err)
+		}
+
+	}
+
+	if err := tr.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
 }
 
-func (r *TranscriptRepo) UpdateStatus(ctx context.Context, id *int) error {
-	query := `
-	UPDATE
-		transcripts
-	SET
-		status = 'done',
-		updated_at = now()
-	WHERE
-		id = $1 AND deleted_at = 0`
+// func (r *TranscriptRepo) UpdateStatus(ctx context.Context, id *int, user_id string) error {
+// 	query := `
+// 	UPDATE
+// 		transcripts
+// 	SET
+// 		status = 'done',
+// 		user_id = $2,
+// 		updated_at = now()
+// 	WHERE
+// 		segment_id = $1 AND deleted_at = 0`
 
-	_, err := r.pg.Pool.Exec(ctx, query, id)
-	if err != nil {
-		return err
-	}
+// 	_, err := r.pg.Pool.Exec(ctx, query, id, user_id)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcript, error) {
 	var createdAt time.Time
@@ -105,18 +133,18 @@ func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcrip
 		s.audio_id,
 		a.filename,
 		t.segment_id,
-		t.user_id,
-		u.username,
-		t.ai_text,
-		COALESCE(NULLIF(t.transcribe_text, ''), 'no_text') AS transcribe_text,
-		COALESCE(NULLIF(t.report_text, ''), 'no_text') AS report_text,
+		COALESCE(t.user_id::text, '') AS user_id,
+		COALESCE(NULLIF(u.username, ''), '') AS username,
+		COALESCE(t.ai_text::text, '') AS ai_text,
+		COALESCE(NULLIF(t.transcribe_text, ''), '') AS transcribe_text,
+		COALESCE(NULLIF(t.report_text, ''), '') AS report_text,
 		t.status,
 		t.created_at
 	FROM transcripts t
-	JOIN users u ON t.user_id = u.id
+	LEFT JOIN users u ON t.user_id = u.id
 	JOIN audio_file_segments s ON t.segment_id = s.id
 	JOIN audio_files a ON s.audio_id = a.id
-	WHERE t.id = $1 AND t.deleted_at = 0 AND s.deleted_at = 0
+	WHERE t.segment_id = $1 AND t.deleted_at = 0 AND s.deleted_at = 0
 	`
 	transcript := &entity.Transcript{}
 	err := r.pg.Pool.QueryRow(ctx, query, id).Scan(
@@ -144,7 +172,7 @@ func (r *TranscriptRepo) Delete(ctx context.Context, id int) error {
 	query := `
 	UPDATE transcripts
 	SET deleted_at = EXTRACT(EPOCH FROM NOW())
-	WHERE id = $1 AND deleted_at = 0
+	WHERE segment_id = $1 AND deleted_at = 0
 	`
 	_, err := r.pg.Pool.Exec(ctx, query, id)
 	if err != nil {
@@ -162,15 +190,15 @@ func (r *TranscriptRepo) GetList(ctx context.Context, req *entity.GetTranscriptR
 		s.audio_id,
 		a.filename,
 		t.segment_id, 
-		t.user_id, 
-		u.username,
-		t.ai_text,
-		COALESCE(NULLIF(t.transcribe_text, ''), 'no_text') AS transcribe_text,
-		COALESCE(NULLIF(t.report_text, ''), 'no_text') AS report_text,
+		COALESCE(t.user_id::text, '') AS user_id,
+		COALESCE(NULLIF(u.username, ''), '') AS username,
+		COALESCE(t.ai_text::text, '') AS ai_text,
+		COALESCE(NULLIF(t.transcribe_text, ''), '') AS transcribe_text,
+		COALESCE(NULLIF(t.report_text, ''), '') AS report_text,
 		t.status,
 		t.created_at
 	FROM transcripts t
-	JOIN users u ON t.user_id = u.id
+	LEFT JOIN users u ON t.user_id = u.id
 	JOIN audio_file_segments s ON t.segment_id = s.id
 	JOIN audio_files a ON s.audio_id = a.id
 	WHERE t.deleted_at = 0 AND s.deleted_at = 0
@@ -198,10 +226,12 @@ func (r *TranscriptRepo) GetList(ctx context.Context, req *entity.GetTranscriptR
 		query += " AND " + strings.Join(conditions, " AND ")
 	}
 
-	query += ` ORDER BY t.created_at DESC OFFSET $` + strconv.Itoa(len(args)+1) + ` LIMIT $` + strconv.Itoa(len(args)+2)
-
-	args = append(args, req.Filter.Offset, req.Filter.Limit)
-
+	query += ` ORDER BY t.segment_id OFFSET $` + strconv.Itoa(len(args)+1)
+	args = append(args, req.Filter.Offset)
+	if req.Filter.Limit != 0 {
+		query += " LIMIT $" + strconv.Itoa(len(args)+1)
+		args = append(args, req.Filter.Limit)
+	}
 	rows, err := r.pg.Pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transcript list: %w", err)

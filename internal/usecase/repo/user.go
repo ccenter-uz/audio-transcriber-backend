@@ -1,77 +1,77 @@
 package repo
 
-// import (
-// 	"context"
-// 	"database/sql"
-// 	"errors"
-// 	"fmt"
-// 	"strconv"
-// 	"strings"
-// 	"time"
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"time"
 
-// 	"github.com/mirjalilova/voice_transcribe/config"
-// 	"github.com/mirjalilova/voice_transcribe/internal/entity"
-// 	"github.com/mirjalilova/voice_transcribe/pkg/logger"
-// 	"github.com/mirjalilova/voice_transcribe/pkg/postgres"
-// 	"golang.org/x/crypto/bcrypt"
-// )
+	"github.com/mirjalilova/voice_transcribe/config"
+	"github.com/mirjalilova/voice_transcribe/internal/entity"
+	"github.com/mirjalilova/voice_transcribe/pkg/logger"
+	"github.com/mirjalilova/voice_transcribe/pkg/postgres"
+)
 
-// type AuthRepo struct {
-// 	pg     *postgres.Postgres
-// 	config *config.Config
-// 	logger *logger.Logger
-// }
+type AuthRepo struct {
+	pg     *postgres.Postgres
+	config *config.Config
+	logger *logger.Logger
+}
 
-// // New -.
-// func NewAuthRepo(pg *postgres.Postgres, config *config.Config, logger *logger.Logger) *AuthRepo {
-// 	return &AuthRepo{
-// 		pg:     pg,
-// 		config: config,
-// 		logger: logger,
-// 	}
-// }
+// New -.
+func NewAuthRepo(pg *postgres.Postgres, config *config.Config, logger *logger.Logger) *AuthRepo {
+	return &AuthRepo{
+		pg:     pg,
+		config: config,
+		logger: logger,
+	}
+}
 
-// func (r *AuthRepo) Login(ctx context.Context, req *entity.LoginReq) (*entity.User, error) {
-// 	res := &entity.User{}
+func (r *AuthRepo) Login(ctx context.Context, req *entity.LoginReq) (*entity.UserInfo, error) {
+	res := &entity.UserInfo{}
 
-// 	var password string
-// 	var createdAt time.Time
-// 	query := `SELECT id, username, role, password_hash, created_at FROM users WHERE username = $1 AND deleted_at = 0`
-// 	err := r.pg.Pool.QueryRow(ctx, query, req.Username).Scan(
-// 		&res.Id,
-// 		&res.Username,
-// 		&res.Role,
-// 		&password,
-// 		&createdAt)
-// 	if err != nil {
-// 		if err == sql.ErrNoRows {
-// 			return nil, fmt.Errorf("user not found: %w", err)
-// 		}
-// 		return nil, fmt.Errorf("failed to query user: %w", err)
-// 	}
+	var password string
+	var createdAt time.Time
+	query := `SELECT id, login, role, password_hash, service_name, username, first_number, image_url, created_at FROM users WHERE login = $1 AND password_hash = $2 AND deleted_at = 0`
+	err := r.pg.Pool.QueryRow(ctx, query, req.Login, req.Password).Scan(
+		&res.AgentID,
+		&res.Login,
+		&res.Role,
+		&password,
+		&res.ServiceName,
+		&res.Name,
+		&res.FirstNumber,
+		&res.Image,
+		&createdAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to query user: %w", err)
+	}
 
-// 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); err != nil {
-// 		return nil, errors.New("invalid username or password")
-// 	}
+	// if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); err != nil {
+	// 	return nil, errors.New("invalid login or password")
+	// }
 
-// 	res.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
+	res.CreateDate = createdAt.Format("2006-01-02 15:04:05")
 
-// 	return res, nil
-// }
+	return res, nil
+}
 
-// func (r *AuthRepo) Create(ctx context.Context, req *entity.CreateUser) error {
+func (r *AuthRepo) Create(ctx context.Context, req *entity.UserInfo) error {
 
-// 	query := `
-// 	INSERT INTO users (username, password_hash, role)
-// 	VALUES ($1, $2, $3) 
-// `
-// 	_, err := r.pg.Pool.Exec(ctx, query, req.Username, req.Password, req.Role)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create user: %w", err)
-// 	}
+	query := `
+	INSERT INTO users (id, login, username, password_hash, first_number, service_name, image_url)
+	VALUES ($1, $2, $3, $4, $5, $6, $7) 
+`
+	_, err := r.pg.Pool.Exec(ctx, query, req.AgentID, req.Login, req.Name, req.Password, req.FirstNumber, req.ServiceName, req.Image)
+	if err != nil {
+		return fmt.Errorf("failed to create user: %w", err)
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
 // func (r *AuthRepo) Update(ctx context.Context, req *entity.UpdateUser) error {
 // 	query := `

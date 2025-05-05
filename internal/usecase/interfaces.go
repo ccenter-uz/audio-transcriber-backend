@@ -10,15 +10,15 @@ import (
 //go:generate mockgen -source=interfaces.go -destination=./mocks_test.go -package=usecase_test
 
 type (
-	// // AuthRepo -.
-	// AuthRepoI interface {
-	// 	Login(ctx context.Context, req *entity.LoginReq) (*entity.User, error)
-	// 	Create(ctx context.Context, req *entity.CreateUser) error
-	// 	GetById(ctx context.Context, id int) (*entity.User, error)
-	// 	GetList(ctx context.Context, req *entity.GetUserReq) (*entity.UserList, error)
-	// 	Update(ctx context.Context, req *entity.UpdateUser) error
-	// 	Delete(ctx context.Context, id int) error
-	// }
+	// AuthRepo -.
+	AuthRepoI interface {
+		Login(ctx context.Context, req *entity.LoginReq) (*entity.UserInfo, error)
+		Create(ctx context.Context, req *entity.UserInfo) error
+		// GetById(ctx context.Context, id int) (*entity.User, error)
+		// GetList(ctx context.Context, req *entity.GetUserReq) (*entity.UserList, error)
+		// Update(ctx context.Context, req *entity.UpdateUser) error
+		// Delete(ctx context.Context, id int) error
+	}
 
 	// TranscriptRepo -.
 	TranscriptRepoI interface {
@@ -26,7 +26,7 @@ type (
 		GetById(ctx context.Context, id int) (*entity.Transcript, error)
 		GetList(ctx context.Context, req *entity.GetTranscriptReq) (*entity.TranscriptList, error)
 		Update(ctx context.Context, req *entity.UpdateTranscript) error
-		UpdateStatus(ctx context.Context, id *int) error
+		// UpdateStatus(ctx context.Context, id *int, user_id string) error
 		Delete(ctx context.Context, id int) error
 	}
 
@@ -37,11 +37,12 @@ type (
 		GetList(ctx context.Context, req *entity.GetAudioSegmentReq) (*entity.AudioSegmentList, error)
 		Delete(ctx context.Context, id int) error
 		GetTranscriptPercent(ctx context.Context) (*[]entity.TranscriptPersent, error)
-		GetUserTranscriptCount(ctx context.Context) (*[]entity.UserTranscriptCount, error)
+		GetUserTranscriptStatictics(ctx context.Context, user_id string) (*entity.UserTranscriptStatictics, error)
 	}
 
 	// AudioFileRepo -.
 	AudioFileRepoI interface {
 		Create(ctx context.Context, req *entity.CreateAudioFile) (*int, error)
+		GetById(ctx context.Context, id int) (*entity.AudioFile, error)
 	}
 )

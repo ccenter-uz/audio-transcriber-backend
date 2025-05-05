@@ -7,9 +7,11 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mirjalilova/voice_transcribe/config"
+	"github.com/mirjalilova/voice_transcribe/internal/controller/http/token"
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
 )
 
@@ -51,11 +53,77 @@ func (h *Handler) Login(ctx *gin.Context) {
 		return
 	}
 
+	user, err := h.UseCase.AuthRepo.Login(ctx, &body)
+	if err == nil {
+		tokens := token.GenerateJWTToken(user.AgentID, user.Role, user.Name)
+		if err != nil {
+			slog.Error("Error generating token", slog.String("error", err.Error()))
+			ctx.JSON(500, gin.H{"error": "Error generating token"})
+			return
+		}
+		slog.Info("Login successful")
+		ctx.JSON(200, gin.H{
+			"message":      "Login successful",
+			"access_token": tokens.AccessToken,
+			"user":         user,
+		})
+		return
+	}
+
+	req, err := http.NewRequest("GET", "https://api.graphic.ccenter.uz/api/v1/Auth/one", nil)
+	if err != nil {
+		slog.Error("Request creation error", slog.String("error", err.Error()))
+		ctx.JSON(500, gin.H{"error": "Request creation error"})
+		return
+	}
+
+	req.Header.Set("Authorization", "Bearer "+loginResp.Token)
+	req.Header.Set("Accept", "*/*")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		slog.Error("Request error", slog.String("error", err.Error()))
+		ctx.JSON(500, gin.H{"error": "Request error"})
+		return
+	}
+	defer res.Body.Close()
+
+	bodyUser, _ := ioutil.ReadAll(res.Body)
+
+	if res.StatusCode != http.StatusOK {
+		slog.Error("Failed to get user info", slog.String("error", string(bodyUser)))
+		ctx.JSON(res.StatusCode, gin.H{"error": "Failed to get user info", "body": string(bodyUser)})
+		return
+	}
+
+	var userInfo entity.UserInfo
+	err = json.Unmarshal(bodyUser, &userInfo)
+	if err != nil {
+		slog.Error("Failed to parse response", slog.String("error", err.Error()))
+		ctx.JSON(500, gin.H{"error": "Failed to parse response"})
+		return
+	}
+
+	userInfo.CreateDate = time.Now().Format("2006-01-02 15:04:05")
+	err = h.UseCase.AuthRepo.Create(ctx, &userInfo)
+	if err != nil {
+		slog.Error("Error creating user", slog.String("error", err.Error()))
+		ctx.JSON(500, gin.H{"error": "Error creating user"})
+		return
+	}
+	tokens := token.GenerateJWTToken(user.AgentID, "transcriber", user.Name)
+	if err != nil {
+		slog.Error("Error generating token", slog.String("error", err.Error()))
+		ctx.JSON(500, gin.H{"error": "Error generating token"})
+		return
+	}
+
 	slog.Info("Login successful")
 	ctx.JSON(200, gin.H{
 		"message":      "Login successful",
-		"role":         loginResp.Role,
-		"access_token": loginResp.Token,
+		"access_token": tokens.AccessToken,
+		"user":         userInfo,
 	})
 }
 
@@ -116,13 +184,6 @@ func (h *Handler) GetUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
 		return
 	}
-
-	// const prefix = "Bearer "
-	// if len(authHeader) <= len(prefix) || authHeader[:len(prefix)] != prefix {
-	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Authorization header format"})
-	// 	return
-	// }
-	// token := authHeader[len(prefix):]
 
 	req, err := http.NewRequest("GET", "https://api.graphic.ccenter.uz/api/v1/Auth/one", nil)
 	if err != nil {
