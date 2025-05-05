@@ -114,7 +114,8 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 		a.filename,
 		s.filename,
 		t.status,
-		s.created_at
+		s.created_at,
+		a.id
 	FROM 
 		audio_file_segments s
 	JOIN 
@@ -124,7 +125,6 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	WHERE 
 		a.deleted_at = 0 AND s.deleted_at = 0
 	`
-
 	var conditions []string
 	var args []interface{}
 
@@ -140,6 +140,9 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 
 	if len(conditions) > 0 {
 		query += " AND " + strings.Join(conditions, " AND ")
+	} else if req.UserID != "" {
+		query += " AND a.user_id = $" + strconv.Itoa(len(args)+1) + " AND a.status = 'processing' "
+		args = append(args, req.UserID)
 	} else {
 		query += `
 		AND a.id = (
@@ -160,6 +163,7 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	}
 	defer rows.Close()
 
+	var audioId int
 	audioSegments := entity.AudioSegmentList{}
 	for rows.Next() {
 		var createdAt time.Time
@@ -174,7 +178,8 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 			&audioName,
 			&transcript.FilePath,
 			&status,
-			&createdAt)
+			&createdAt,
+			&audioId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan segment: %w", err)
 		}
@@ -193,6 +198,17 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 		transcript.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
 		audioSegments.AudioSegments = append(audioSegments.AudioSegments, transcript)
 		audioSegments.Count = count
+	}
+
+	query = `SELECT user_id FROM audio_files WHERE id = $1 AND deleted_at = 0`
+	var userId string
+
+	err = r.pg.Pool.QueryRow(ctx, query, audioId).Scan(&userId)
+	if userId == "" {
+		_, err = r.pg.Pool.Exec(ctx, "UPDATE audio_files SET status = 'processing', user_id = $2 WHERE id = $1 AND deleted_at = 0", audioId, req.UIserId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update file: %w", err)
+		}
 	}
 
 	return &audioSegments, nil

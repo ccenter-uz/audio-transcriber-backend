@@ -18,6 +18,8 @@ type AudioSegment struct {
 type GetAudioSegmentReq struct {
 	Status  string `json:"status"`
 	AudioId string `json:"audio_id"`
+	UIserId string `json:"user_id"`
+	UserID  string `json:"user_Id"`
 	Filter  Filter `json:"filter"`
 }
 type AudioSegmentList struct {

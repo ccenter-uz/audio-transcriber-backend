@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
 	"github.com/mirjalilova/voice_transcribe/config"
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
 )
@@ -57,21 +58,55 @@ func (h *Handler) GetAudioSegment(ctx *gin.Context) {
 // @Accept  json
 // @Produce  json
 // @Param audio_id query int false "Filter by audio id"
-// // @Param user_id query int false "Filter by user id"
+// @Param user_id query string false "user id"
 // @Param status query string false "Filter by status"
 // @Success 200 {object} entity.AudioSegmentList
 // @Failure 400 {object} entity.ErrorResponse
 func (h *Handler) GetAudioSegments(ctx *gin.Context) {
 	var req entity.GetAudioSegmentReq
 
+	var user_id string
+	claims, exists := ctx.Get("claims")
+	if !exists {
+		slog.Error("error", "Unauthorized")
+		ctx.JSON(401, entity.ErrorResponse{
+			Code:    config.ErrorUnauthorized,
+			Message: "Unauthorizedd",
+		})
+		return
+	} else {
+		user_id = claims.(jwt.MapClaims)["id"].(string)
+	}
+
 	// Assign other filters
 	req.AudioId = ctx.Query("audio_id")
 	req.Status = ctx.Query("status")
+	req.UIserId = user_id
+	req.UserID = ctx.Query("user_id")
 
 	// Fetch audio_segment
 	audio_segment, err := h.UseCase.AudioSegmentRepo.GetList(ctx, &req)
 	if h.HandleDbError(ctx, err, "Error getting audio_segment") {
 		slog.Error("GetAudioSegments error", slog.String("error", err.Error()))
+		return
+	}
+
+	if len(audio_segment.AudioSegments) == 0 {
+		slog.Info("No audio_segment found")
+		audio_segment, err := h.UseCase.AudioSegmentRepo.GetList(ctx, &entity.GetAudioSegmentReq{UIserId: user_id})
+		if h.HandleDbError(ctx, err, "Error getting audio_segment") {
+			slog.Error("GetAudioSegments error", slog.String("error", err.Error()))
+			return
+		}
+
+		for i := range audio_segment.AudioSegments {
+			baseURL := "http://192.168.31.50:8080"
+			audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, audio_segment.AudioSegments[i].FilePath)
+			audio_segment.AudioSegments[i].FilePath = audioSegmentURL
+		}
+
+		slog.Info("AudioSegment retrieved successfully")
+		ctx.JSON(http.StatusOK, audio_segment)
 		return
 	}
 

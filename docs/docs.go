@@ -15,6 +15,55 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/audio_file/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get audio file",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audio"
+                ],
+                "summary": "Get audio file",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Audio ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entity.AudioFile"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/audio_segment": {
             "get": {
                 "security": [
@@ -38,6 +87,12 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Filter by audio id",
                         "name": "audio_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "user id",
+                        "name": "user_id",
                         "in": "query"
                     },
                     {
@@ -560,6 +615,23 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "entity.AudioFile": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "entity.AudioSegment": {
             "type": "object",
             "properties": {

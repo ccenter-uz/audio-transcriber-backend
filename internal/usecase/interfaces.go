@@ -43,5 +43,6 @@ type (
 	// AudioFileRepo -.
 	AudioFileRepoI interface {
 		Create(ctx context.Context, req *entity.CreateAudioFile) (*int, error)
+		GetById(ctx context.Context, id int) (*entity.AudioFile, error)
 	}
 )

@@ -11,9 +11,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mirjalilova/voice_transcribe/config"
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
 )
 
@@ -219,4 +221,38 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 		}
 	}
 	return nil
+}
+
+// GetAudioFile godoc
+// @Router /api/v1/audio_file/{id} [get]
+// @Summary Get audio file
+// @Description Get audio file
+// @Security BearerAuth
+// @Tags audio
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Audio ID"
+// @Success 200 {object} entity.AudioFile
+// @Failure 400 {object} entity.ErrorResponse
+// @Failure 500 {object} entity.ErrorResponse
+func (h *Handler) GetAudioFile(ctx *gin.Context) {
+	id := ctx.Param("id")
+	intId, err := strconv.Atoi(id)
+	if err != nil {
+		slog.Error("GetAudioFile error", slog.String("error", err.Error()))
+		ctx.JSON(400, entity.ErrorResponse{
+			Code:    config.ErrorBadRequest,
+			Message: "Invalid audio ID",
+		})
+		return
+	}
+
+	audioFile, err := h.UseCase.AudioFileRepo.GetById(ctx, intId)
+	if h.HandleDbError(ctx, err, "Error getting audio file") {
+		slog.Error("GetAudioFile error", slog.String("error", err.Error()))
+		return
+	}
+
+	slog.Info("AudioFile retrieved successfully")
+	ctx.JSON(200, audioFile)
 }

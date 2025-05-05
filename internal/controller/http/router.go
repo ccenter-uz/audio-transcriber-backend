@@ -104,8 +104,8 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 		router.DELETE("/transcript/delete", handlerV1.DeleteTranscript)
 
 		// audio_segment
-		router.GET("/audio_segment", handlerV1.GetAudioSegments)
-		router.GET("/audio_segment/:id", handlerV1.GetAudioSegment)
+		router.GET("/audio_segment", middleware.NewAuth(enforcer), handlerV1.GetAudioSegments)
+		router.GET("/audio_segment/:id", middleware.NewAuth(enforcer), handlerV1.GetAudioSegment)
 		router.DELETE("/audio_segment/delete", handlerV1.DeleteAudioSegment)
 
 		// dashboard
@@ -114,5 +114,6 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 
 		// audio
 		router.POST("/upload-zip-audio", handlerV1.UploadZipAndExtractAudio)
+		router.GET("/audio_file/:id", handlerV1.GetAudioFile)
 	}
 }

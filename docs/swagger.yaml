@@ -1,5 +1,16 @@
 basePath: /
 definitions:
+  entity.AudioFile:
+    properties:
+      filename:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      user_id:
+        type: string
+    type: object
   entity.AudioSegment:
     properties:
       audio_id:
@@ -141,6 +152,37 @@ info:
   title: Voice Transcribe API
   version: "1.0"
 paths:
+  /api/v1/audio_file/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get audio file
+      parameters:
+      - description: Audio ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.AudioFile'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get audio file
+      tags:
+      - audio
   /api/v1/audio_segment:
     get:
       consumes:
@@ -151,6 +193,10 @@ paths:
         in: query
         name: audio_id
         type: integer
+      - description: user id
+        in: query
+        name: user_id
+        type: string
       - description: Filter by status
         in: query
         name: status
