@@ -288,6 +288,71 @@ func (r *AudioSegmentRepo) GetUserTranscriptStatictics(ctx context.Context, user
 
 	return &res, nil
 }
+func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter) (*[]entity.DatasetViewerList, error) {
+	query := `
+					SELECT
+			af.id AS audio_id,
+			af.filename AS audio_filename,
+			afs.id AS chunk_id,
+			afs.filename AS segment_filename,
+			afs.duration,
+			t.transcribe_text AS chunk_text,
+			LAG(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS previous_text,
+			LEAD(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS next_text,
+			aggregated_segments.all_transcripts
+		FROM audio_files af
+		JOIN audio_file_segments afs ON af.id = afs.audio_id
+		JOIN transcripts t ON afs.id = t.segment_id
+		JOIN (
+			SELECT
+				af.id AS audio_id,
+				STRING_AGG(t2.transcribe_text, ' ' ORDER BY t2.id) AS all_transcripts
+			FROM audio_files af
+			JOIN audio_file_segments afs2 ON af.id = afs2.audio_id
+			JOIN transcripts t2 ON afs2.id = t2.segment_id
+			WHERE t2.deleted_at = 0
+			GROUP BY af.id
+		) aggregated_segments ON af.id = aggregated_segments.audio_id
+		WHERE
+			af.deleted_at = 0
+			AND afs.deleted_at = 0
+			AND t.deleted_at = 0
+		ORDER BY af.id, afs.id
+		LIMIT $1 OFFSET $2;
+`
+	rows, err := r.pg.Pool.Query(ctx, query, req.Limit, req.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dataset viewer: %w", err)
+	}
+	defer rows.Close()
+	res := []entity.DatasetViewerList{}
+	for rows.Next() {
+		reps := entity.DatasetViewerList{}
+		err := rows.Scan(
+			&reps.AudioID,
+			&reps.AudioUrl,
+			&reps.ChunkID,
+			&reps.ChunkUrl,
+			&reps.Duration,
+			&reps.ChunkText,
+			&reps.PreviouText,
+			&reps.NextText,
+			&reps.Sentence,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan dataset viewer: %w", err)
+		}
+
+		res = append(res, reps)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate over dataset viewer rows: %w", err)
+	}
+	if len(res) == 0 {
+		return nil, fmt.Errorf("no dataset viewer found")
+	}
+	return &res, nil
+}
 
 // func (r *AudioSegmentRepo) GetUserTranscriptCount(ctx context.Context) (*[]entity.UserTranscriptCount, error) {
 // 	query := `SELECT

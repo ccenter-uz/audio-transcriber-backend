@@ -50,3 +50,15 @@ type UserTranscriptStatictics struct {
 	WeeklyChunks     int     `json:"weekly_chunks"`
 	DailyChunks      string  `json:"daily_chunks"`
 }
+
+type DatasetViewerList struct {
+	AudioID     int     `json:"audio_id"`
+	AudioUrl    string  `json:"audio_url"`
+	ChunkID     int     `json:"chunk_id"`
+	ChunkUrl    string  `json:"chunk_url"`
+	Duration    float32 `json:"duration"`
+	PreviouText *string `json:"previous_text"`
+	ChunkText   *string `json:"text"`
+	NextText    *string `json:"next_text"`
+	Sentence    *string `json:"sentence"`
+}

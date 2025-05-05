@@ -38,6 +38,7 @@ type (
 		Delete(ctx context.Context, id int) error
 		GetTranscriptPercent(ctx context.Context) (*[]entity.TranscriptPersent, error)
 		GetUserTranscriptStatictics(ctx context.Context, user_id string) (*entity.UserTranscriptStatictics, error)
+		DatasetViewer(ctx context.Context, req *entity.Filter) (*[]entity.DatasetViewerList, error)
 	}
 
 	// AudioFileRepo -.
