@@ -208,7 +208,7 @@ func (h *Handler) GetUserTranscriptStatictics(ctx *gin.Context) {
 // @Produce  json
 // @Param offset query number false "Offset for pagination"
 // @Param limit query number false "Limit for pagination"
-// @Success 200 {object} entity.AudioSegmentList
+// @Success 200 {object} entity.DatasetViewerList
 // @Failure 400 {object} entity.ErrorResponse
 func (h *Handler) DatasetViewer(ctx *gin.Context) {
 	var req entity.Filter
