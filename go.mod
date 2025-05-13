@@ -7,6 +7,7 @@ require (
 	github.com/casbin/casbin/v2 v2.105.0
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.0
+	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang-migrate/migrate/v4 v4.18.2

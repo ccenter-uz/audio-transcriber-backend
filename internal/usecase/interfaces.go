@@ -39,6 +39,7 @@ type (
 		GetTranscriptPercent(ctx context.Context) (*[]entity.TranscriptPersent, error)
 		GetUserTranscriptStatictics(ctx context.Context, user_id string) (*entity.UserTranscriptStatictics, error)
 		DatasetViewer(ctx context.Context, req *entity.Filter) (*[]entity.DatasetViewerList, error)
+		GetStatistics(ctx context.Context) (*entity.Statistics, error)
 	}
 
 	// AudioFileRepo -.

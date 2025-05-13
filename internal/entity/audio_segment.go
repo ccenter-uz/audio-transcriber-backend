@@ -63,3 +63,11 @@ type DatasetViewerList struct {
 	Sentence    *string `json:"sentence"`
 	Transcriber *string `json:"transcriber"`
 }
+
+type Statistics struct {
+	Duration    map[string]int `json:"duration"`
+	Text        map[string]int `json:"text"`
+	PreviouText map[string]int `json:"previous_text"`
+	NextText    map[string]int `json:"next_text"`
+	Transcriber map[string]int `json:"transcriber"`
+}

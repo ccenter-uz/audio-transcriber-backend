@@ -72,6 +72,29 @@ definitions:
       password:
         type: string
     type: object
+  entity.Statistics:
+    properties:
+      duration:
+        additionalProperties:
+          type: integer
+        type: object
+      next_text:
+        additionalProperties:
+          type: integer
+        type: object
+      previous_text:
+        additionalProperties:
+          type: integer
+        type: object
+      text:
+        additionalProperties:
+          type: integer
+        type: object
+      transcriber:
+        additionalProperties:
+          type: integer
+        type: object
+    type: object
   entity.SuccessResponse:
     properties:
       message:
@@ -393,6 +416,27 @@ paths:
       security:
       - BearerAuth: []
       summary: Get a list of dataset_viewer
+      tags:
+      - dashboard
+  /api/v1/statistic:
+    get:
+      consumes:
+      - application/json
+      description: Get statistic
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.Statistics'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get statistic
       tags:
       - dashboard
   /api/v1/transcript/{id}:
