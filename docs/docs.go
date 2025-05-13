@@ -354,7 +354,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.AudioSegmentList"
+                            "$ref": "#/definitions/entity.DatasetViewerList"
                         }
                     },
                     "400": {
@@ -674,6 +674,41 @@ const docTemplate = `{
                 },
                 "count": {
                     "type": "integer"
+                }
+            }
+        },
+        "entity.DatasetViewerList": {
+            "type": "object",
+            "properties": {
+                "audio_id": {
+                    "type": "integer"
+                },
+                "audio_url": {
+                    "type": "string"
+                },
+                "chunk_id": {
+                    "type": "integer"
+                },
+                "chunk_url": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "number"
+                },
+                "next_text": {
+                    "type": "string"
+                },
+                "previous_text": {
+                    "type": "string"
+                },
+                "sentence": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "transcriber": {
+                    "type": "string"
                 }
             }
         },
