@@ -357,6 +357,149 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 	return &res, nil
 }
 
+func (r *AudioSegmentRepo) GetStatistics(ctx context.Context) (*entity.Statistics, error) {
+	query := `
+	WITH transcribed AS (
+		SELECT 
+			u.username,
+			t.transcribe_text,
+			afs.duration,
+			LAG(t.transcribe_text) OVER (PARTITION BY t.user_id ORDER BY afs.id) AS previous_text,
+			LEAD(t.transcribe_text) OVER (PARTITION BY t.user_id ORDER BY afs.id) AS next_text
+		FROM 
+			transcripts t
+		JOIN audio_file_segments afs ON t.segment_id = afs.id
+		JOIN users u ON t.user_id = u.id
+		WHERE t.deleted_at = 0 AND afs.deleted_at = 0 AND t.status = 'done'
+	)
+	SELECT * FROM transcribed;
+	`
+
+	rows, err := r.pg.Pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	durationStats := make(map[string]int)
+	textStats := make(map[string]int)
+	prevTextStats := make(map[string]int)
+	nextTextStats := make(map[string]int)
+	transcriberStats := make(map[string]int)
+
+	for rows.Next() {
+		var username string
+		var transcribeText, previousText, nextText sql.NullString
+		var duration sql.NullFloat64
+
+		if err := rows.Scan(&username, &transcribeText, &duration, &previousText, &nextText); err != nil {
+			return nil, err
+		}
+
+		transcriberStats[username]++
+
+		if duration.Valid {
+			dur := duration.Float64
+			var bucket string
+			switch {
+			case dur <= 1.0:
+				bucket = "0-1s"
+			case dur <= 2.0:
+				bucket = "1-2s"
+			case dur <= 3.0:
+				bucket = "2-3s"
+			case dur <= 4.0:
+				bucket = "3-4s"
+			case dur <= 5.0:
+				bucket = "4-5s"
+			case dur <= 6.0:
+				bucket = "5-6s"
+			case dur <= 7.0:
+				bucket = "6-7s"
+			case dur <= 8.0:
+				bucket = "7-8s"
+			case dur <= 9.0:
+				bucket = "8-9s"
+			case dur <= 10.0:
+				bucket = "9-10s"
+			case dur <= 11.0:
+				bucket = "10-11s"
+			case dur <= 12.0:
+				bucket = "11-12s"
+			case dur <= 13.0:
+				bucket = "12-13s"
+			case dur <= 14.0:
+				bucket = "13-14s"
+			case dur <= 15.0:
+				bucket = "14-15s"
+			case dur <= 16.0:
+				bucket = "15-16s"
+			case dur <= 17.0:
+				bucket = "16-17s"
+			case dur <= 18.0:
+				bucket = "17-18s"
+			case dur <= 19.0:
+				bucket = "18-19s"
+			case dur <= 20.0:
+				bucket = "19-20s"
+			case dur <= 21.0:
+				bucket = "20-21s"
+			case dur <= 22.0:
+				bucket = "21-22s"
+			default:
+				bucket = "22s+"
+			}
+			durationStats[bucket]++
+		}
+
+		bucketByLength := func(text string) string {
+			length := len(text)
+			switch {
+			case length <= 15:
+				return "0-15"
+			case length <= 30:
+				return "16-30"
+			case length <= 45:
+				return "31-45"
+			case length <= 60:
+				return "46-60"
+			case length <= 75:
+				return "61-75"
+			case length <= 90:
+				return "76-90"
+			case length <= 105:
+				return "91-105"
+			case length <= 120:
+				return "106-120"
+			default:
+				return "121+"
+			}
+		}
+
+		if transcribeText.Valid {
+			textStats[bucketByLength(transcribeText.String)]++
+		}
+		if previousText.Valid {
+			prevTextStats[bucketByLength(previousText.String)]++
+		}
+		if nextText.Valid {
+			nextTextStats[bucketByLength(nextText.String)]++
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &entity.Statistics{
+		Duration:    durationStats,
+		Text:        textStats,
+		PreviouText: prevTextStats,
+		NextText:    nextTextStats,
+		Transcriber: transcriberStats,
+	}, nil
+}
+
 // func (r *AudioSegmentRepo) GetUserTranscriptCount(ctx context.Context) (*[]entity.UserTranscriptCount, error) {
 // 	query := `SELECT
 // 				t.user_id,

@@ -230,7 +230,7 @@ func (h *Handler) DatasetViewer(ctx *gin.Context) {
 	// Fetch audio_segment
 	dataset_viewer, err := h.UseCase.AudioSegmentRepo.DatasetViewer(ctx, &req)
 	if h.HandleDbError(ctx, err, "Error getting audio_segment") {
-		slog.Error("GetAudioSegments error", slog.String("error", err.Error()))
+		slog.Error("DatasetViewer error", slog.String("error", err.Error()))
 		return
 	}
 
@@ -245,6 +245,30 @@ func (h *Handler) DatasetViewer(ctx *gin.Context) {
 	}
 
 	// Return response
-	slog.Info("AudioSegment retrieved successfully")
+	slog.Info("DatasetViewer retrieved successfully")
 	ctx.JSON(http.StatusOK, dataset_viewer)
+}
+
+// GetStatistic godoc
+// @Router /api/v1/statistic [get]
+// @Summary Get statistic
+// @Description Get statistic
+// @Security BearerAuth
+// @Tags dashboard
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} entity.Statistics
+// @Failure 400 {object} entity.ErrorResponse
+func (h *Handler) GetStatistic(ctx *gin.Context) {
+
+
+	statistic, err := h.UseCase.AudioSegmentRepo.GetStatistics(ctx)
+	if h.HandleDbError(ctx, err, "Error getting statistic") {
+		slog.Error("GetStatistic error", slog.String("error", err.Error()))
+		return
+	}
+
+	// Return response
+	slog.Info("Statistic retrieved successfully")
+	ctx.JSON(http.StatusOK, statistic)
 }
