@@ -90,7 +90,7 @@ CREATE OR REPLACE FUNCTION get_user_transcription_statistics(p_user_id UUID)
 RETURNS TABLE (
     total_audio_files BIGINT,
     total_segments BIGINT,
-    total_minutes BIGINT,
+    total_minutes NUMERIC,
     weekly_audio_files BIGINT,
     weekly_segments BIGINT,
     daily_segments JSONB
@@ -107,13 +107,11 @@ BEGIN
             t.created_at::DATE AS transcript_created_at,
             afs.audio_id,
             afs.id AS segment_id,
-            afs.duration
+            afs.duration AS duration
         FROM 
             transcripts t
-        JOIN 
-            audio_file_segments afs ON t.segment_id = afs.id
-        JOIN 
-            audio_files af ON af.id = afs.audio_id
+        JOIN audio_file_segments afs ON t.segment_id = afs.id
+        JOIN audio_files af ON af.id = afs.audio_id
         WHERE 
             t.user_id = p_user_id
             AND t.deleted_at = 0
@@ -122,13 +120,9 @@ BEGIN
             AND t.status = 'done'
     ),
     this_week AS (
-        SELECT 
-            audio_id,
-            segment_id
-        FROM 
-            user_transcripts
-        WHERE 
-            transcript_created_at >= date_trunc('week', CURRENT_DATE)
+        SELECT audio_id, segment_id
+        FROM user_transcripts
+        WHERE transcript_created_at >= date_trunc('week', CURRENT_DATE)
     ),
     daily_counts AS (
         SELECT
@@ -142,14 +136,15 @@ BEGIN
         GROUP BY d.day
     )
     SELECT 
-        (SELECT COUNT(DISTINCT audio_id) FROM user_transcripts) AS total_audio_files,
-        (SELECT COUNT(*) FROM user_transcripts) AS total_segments,
-        (SELECT COALESCE(CEIL(SUM(duration) / 60)::BIGINT, 0) FROM user_transcripts) AS total_minutes,
-        (SELECT COUNT(DISTINCT audio_id) FROM this_week) AS weekly_audio_files,
-        (SELECT COUNT(*) FROM this_week) AS weekly_segments,
-        (SELECT jsonb_object_agg(to_char(day, 'YYYY-MM-DD'), segments_per_day) FROM daily_counts) AS daily_segments;
+        (SELECT COUNT(DISTINCT audio_id) FROM user_transcripts),
+        (SELECT COUNT(*) FROM user_transcripts),
+        (SELECT COALESCE(ROUND(SUM(duration)::NUMERIC / 60.0, 2), 0) FROM user_transcripts),
+        (SELECT COUNT(DISTINCT audio_id) FROM this_week),
+        (SELECT COUNT(*) FROM this_week),
+        (SELECT jsonb_object_agg(to_char(day, 'YYYY-MM-DD'), segments_per_day) FROM daily_counts);
 END;
 $$ LANGUAGE plpgsql;
+
 
 
 
