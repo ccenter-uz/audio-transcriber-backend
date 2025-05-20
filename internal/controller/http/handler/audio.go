@@ -143,7 +143,7 @@ type Response struct {
 }
 
 func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error {
-	url := "https://segment.ccenter.uz/vad-chunk"
+	url := "http://192.168.31.50:8080/vad-chunk"
 
 	file, err := os.Open(audioPath)
 	if err != nil {
@@ -201,7 +201,7 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 	os.MkdirAll(outputDir, os.ModePerm)
 
 	for _, chunk := range result.Chunks {
-		downloadURL := fmt.Sprintf("https://segment.ccenter.uz/download/%s/%s", result.JobID, chunk.ChunkID)
+		downloadURL := fmt.Sprintf("http://192.168.31.50:8080/download/%s/%s", result.JobID, chunk.ChunkID)
 
 		time.Sleep(time.Second * 2)
 		resp, err := http.Get(downloadURL)
