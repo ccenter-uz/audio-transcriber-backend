@@ -19,6 +19,7 @@ import (
 	middleware "github.com/mirjalilova/voice_transcribe/internal/controller/http/middlerware"
 	"github.com/mirjalilova/voice_transcribe/internal/usecase"
 	"github.com/mirjalilova/voice_transcribe/pkg/logger"
+	"github.com/mirjalilova/voice_transcribe/pkg/minio"
 )
 
 func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
@@ -40,12 +41,12 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useCase *usecase.UseCase) {
+func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useCase *usecase.UseCase, minioClient *minio.MinIO) {
 	// Options
 	engine.Use(gin.Logger())
 	//engine.Use(gin.Recovery())
 
-	handlerV1 := handler.NewHandler(l, config, useCase)
+	handlerV1 := handler.NewHandler(l, config, useCase, *minioClient)
 
 	// Initialize Casbin enforcer
 
@@ -80,8 +81,8 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 		slog.Info("Enforcer initialized successfully.")
 	}
 
-	engine.Static("/audios", "./internal/media/audio")
-	engine.Static("/chunks", "./internal/media/segments")
+	// engine.Static("/audios", "./internal/media/audio")
+	// engine.Static("/chunks", "./internal/media/segments")
 
 	// Routes
 	router := engine.Group("/api/v1")

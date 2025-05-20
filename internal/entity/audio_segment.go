@@ -45,7 +45,7 @@ type UserTranscriptStatictics struct {
 	Username         string  `json:"username"`
 	TotalAudioFiles  int     `json:"total_audio_files"`
 	TotalChunks      int     `json:"total_chunks"`
-	TotalMinutes     float32 `json:"total_minutes"`
+	TotalMinutes     float64 `json:"total_minutes"`
 	WeeklyAudioFiles int     `json:"weekly_audio_files"`
 	WeeklyChunks     int     `json:"weekly_chunks"`
 	DailyChunks      string  `json:"daily_chunks"`

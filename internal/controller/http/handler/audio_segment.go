@@ -41,9 +41,9 @@ func (h *Handler) GetAudioSegment(ctx *gin.Context) {
 		return
 	}
 
-	baseURL := "http://192.168.31.50:8080"
-	audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, audio_segment.FilePath)
-	audio_segment.FilePath = audioSegmentURL
+	// baseURL := "http://192.168.31.50:8080"
+	// audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, audio_segment.FilePath)
+	// audio_segment.FilePath = audioSegmentURL
 
 	slog.Info("AudioSegment retrieved successfully")
 	ctx.JSON(200, audio_segment)
@@ -110,11 +110,11 @@ func (h *Handler) GetAudioSegments(ctx *gin.Context) {
 		return
 	}
 
-	for i := range audio_segment.AudioSegments {
-		baseURL := "http://192.168.31.50:8080"
-		audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, audio_segment.AudioSegments[i].FilePath)
-		audio_segment.AudioSegments[i].FilePath = audioSegmentURL
-	}
+	// for i := range audio_segment.AudioSegments {
+	// 	baseURL := "http://192.168.31.50:8080"
+	// 	audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, audio_segment.AudioSegments[i].FilePath)
+	// 	audio_segment.AudioSegments[i].FilePath = audioSegmentURL
+	// }
 
 	// Return response
 	slog.Info("AudioSegment retrieved successfully")
@@ -234,15 +234,15 @@ func (h *Handler) DatasetViewer(ctx *gin.Context) {
 		return
 	}
 
-	baseURL := "http://192.168.31.50:8080"
-	for i := range *dataset_viewer {
-		audioSegmentURL := fmt.Sprintf("%s/chunks/%s", baseURL, (*dataset_viewer)[i].ChunkUrl)
-		(*dataset_viewer)[i].ChunkUrl = audioSegmentURL
-	}
-	for i := range *dataset_viewer {
-		audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, (*dataset_viewer)[i].AudioUrl)
-		(*dataset_viewer)[i].AudioUrl = audioSegmentURL
-	}
+	// baseURL := "http://192.168.31.50:8080"
+	// for i := range *dataset_viewer {
+	// 	audioSegmentURL := fmt.Sprintf("%s/chunks/%s", baseURL, (*dataset_viewer)[i].ChunkUrl)
+	// 	(*dataset_viewer)[i].ChunkUrl = audioSegmentURL
+	// }
+	// for i := range *dataset_viewer {
+	// 	audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, (*dataset_viewer)[i].AudioUrl)
+	// 	(*dataset_viewer)[i].AudioUrl = audioSegmentURL
+	// }
 
 	// Return response
 	slog.Info("DatasetViewer retrieved successfully")

@@ -90,9 +90,16 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 			return
 		}
 
+		minioURL, err := h.MinIO.Upload(filepath.Base(dstPath), dstPath)
+		if err != nil {
+			slog.Error("Failed to upload file to MinIO", "err", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file to storage"})
+			return
+		}
+
 		audio_id, err := h.UseCase.AudioFileRepo.Create(c, &entity.CreateAudioFile{
 			Filename: f.Name,
-			FilePath: dstPath,
+			FilePath: minioURL,
 		})
 		if err != nil {
 			c.JSON(500, gin.H{"error": err})
@@ -105,6 +112,11 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 			slog.Error("Error chunking audio file", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to chunk audio file"})
 			return
+		}
+
+		err = os.Remove(dstPath)
+		if err != nil {
+			slog.Error("Failed to remove local file after upload", "file", dstPath, "err", err)
 		}
 	}
 
@@ -211,13 +223,25 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 		}
 		outFile.Close()
 
+		minioURL, err := h.MinIO.Upload(filepath.Base(filename), filename)
+		if err != nil {
+			slog.Error("Failed to upload file to MinIO", "err", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file to storage"})
+			return err
+		}
+
 		err = h.UseCase.AudioSegmentRepo.Create(c, &entity.CreateAudioSegment{
 			AudioId:  audio_id,
-			FileName: chunk.ChunkID,
+			FileName: minioURL,
 			Duration: float32(chunk.End - chunk.Start),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create audio segment: %w", err)
+		}
+
+		err = os.Remove(filename)
+		if err != nil {
+			slog.Error("Failed to remove local file after upload", "file", chunk.ChunkID, "err", err)
 		}
 	}
 	return nil

@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/mirjalilova/voice_transcribe/pkg/httpserver"
 	"github.com/mirjalilova/voice_transcribe/pkg/logger"
+	"github.com/mirjalilova/voice_transcribe/pkg/minio"
 	"github.com/mirjalilova/voice_transcribe/pkg/postgres"
 )
 
@@ -29,9 +31,16 @@ func Run(cfg *config.Config) {
 	// Use case
 	useCase := usecase.New(pg, cfg, l)
 
+	//MinIO
+	minioClient, err := minio.MinIOConnect(cfg)
+	if err != nil {
+		slog.Error("Failed to connect to MinIO", err)
+		return
+	}
+
 	// HTTP Server
 	handler := gin.New()
-	v1.NewRouter(handler, l, cfg, useCase)
+	v1.NewRouter(handler, l, cfg, useCase, minioClient)
 
 	httpServer := httpserver.New(handler, httpserver.Port(cfg.HTTP.Port))
 

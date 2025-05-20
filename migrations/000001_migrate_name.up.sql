@@ -23,7 +23,7 @@ CREATE INDEX idx_users_username ON users (username);
 
 CREATE TABLE audio_files (
     id SERIAL PRIMARY KEY,
-    filename VARCHAR(100) NOT NULL,
+    filename VARCHAR(200) NOT NULL,
     file_path TEXT NOT NULL,
     status file_status NOT NULL DEFAULT 'pending',
     user_id UUID REFERENCES users(id),
@@ -37,7 +37,7 @@ CREATE INDEX idx_audio_files_id ON audio_files (id);
 CREATE TABLE audio_file_segments (
     id SERIAL PRIMARY KEY,
     audio_id INT NOT NULL REFERENCES audio_files(id),
-    filename VARCHAR(100) NOT NULL,
+    filename VARCHAR(200) NOT NULL,
     duration FLOAT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
