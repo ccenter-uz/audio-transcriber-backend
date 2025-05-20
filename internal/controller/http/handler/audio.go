@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mirjalilova/voice_transcribe/config"
@@ -170,6 +171,7 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 		return err
 	}
 
+	time.Sleep(time.Second * 2)
 	req, err := http.NewRequest("POST", url, &requestBody)
 	if err != nil {
 		return err
@@ -201,6 +203,7 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 	for _, chunk := range result.Chunks {
 		downloadURL := fmt.Sprintf("https://segment.ccenter.uz/download/%s/%s", result.JobID, chunk.ChunkID)
 
+		time.Sleep(time.Second * 2)
 		resp, err := http.Get(downloadURL)
 		if err != nil {
 			return fmt.Errorf("failed to download chunk: %w", err)
