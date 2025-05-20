@@ -90,7 +90,7 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 			return
 		}
 
-		minioURL, err := h.MinIO.Upload(filepath.Base(dstPath), dstPath)
+		minioURL, err := h.MinIO.Upload(*h.Config, filepath.Base(dstPath), dstPath)
 		if err != nil {
 			slog.Error("Failed to upload file to MinIO", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file to storage"})
@@ -223,7 +223,7 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 		}
 		outFile.Close()
 
-		minioURL, err := h.MinIO.Upload(filepath.Base(filename), filename)
+		minioURL, err := h.MinIO.Upload(*h.Config, filepath.Base(filename), filename)
 		if err != nil {
 			slog.Error("Failed to upload file to MinIO", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file to storage"})
