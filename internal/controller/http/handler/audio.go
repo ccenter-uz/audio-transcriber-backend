@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mirjalilova/voice_transcribe/config"
@@ -143,7 +142,7 @@ type Response struct {
 }
 
 func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error {
-	url := "http://192.168.31.50:8080/vad-chunk"
+	url := "http://192.168.31.24:8080/vad-chunk"
 
 	file, err := os.Open(audioPath)
 	if err != nil {
@@ -171,7 +170,6 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 		return err
 	}
 
-	time.Sleep(time.Second * 2)
 	req, err := http.NewRequest("POST", url, &requestBody)
 	if err != nil {
 		return err
@@ -179,12 +177,17 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Accept", "application/json")
 
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to vad-chunk: %s", resp.Status)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -201,9 +204,8 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 	os.MkdirAll(outputDir, os.ModePerm)
 
 	for _, chunk := range result.Chunks {
-		downloadURL := fmt.Sprintf("http://192.168.31.50:8080/download/%s/%s", result.JobID, chunk.ChunkID)
+		downloadURL := fmt.Sprintf("http://192.168.31.24:8080/download/%s/%s", result.JobID, chunk.ChunkID)
 
-		time.Sleep(time.Second * 2)
 		resp, err := http.Get(downloadURL)
 		if err != nil {
 			return fmt.Errorf("failed to download chunk: %w", err)

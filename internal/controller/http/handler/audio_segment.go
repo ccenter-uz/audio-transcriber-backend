@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -99,11 +98,11 @@ func (h *Handler) GetAudioSegments(ctx *gin.Context) {
 			return
 		}
 
-		for i := range audio_segment.AudioSegments {
-			baseURL := "http://192.168.31.50:8080"
-			audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, audio_segment.AudioSegments[i].FilePath)
-			audio_segment.AudioSegments[i].FilePath = audioSegmentURL
-		}
+		// for i := range audio_segment.AudioSegments {
+		// 	baseURL := "http://192.168.31.50:8080"
+		// 	audioSegmentURL := fmt.Sprintf("%s/audios/%s", baseURL, audio_segment.AudioSegments[i].FilePath)
+		// 	audio_segment.AudioSegments[i].FilePath = audioSegmentURL
+		// }
 
 		slog.Info("AudioSegment retrieved successfully")
 		ctx.JSON(http.StatusOK, audio_segment)
@@ -260,7 +259,6 @@ func (h *Handler) DatasetViewer(ctx *gin.Context) {
 // @Success 200 {object} entity.Statistics
 // @Failure 400 {object} entity.ErrorResponse
 func (h *Handler) GetStatistic(ctx *gin.Context) {
-
 
 	statistic, err := h.UseCase.AudioSegmentRepo.GetStatistics(ctx)
 	if h.HandleDbError(ctx, err, "Error getting statistic") {

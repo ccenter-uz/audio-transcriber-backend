@@ -24,8 +24,8 @@ services:
       - "9000:9000"   
       - "9001:9001" 
     command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
+    # volumes:
+    #   - minio_data:/data
     networks:
       - ntwrk
   
@@ -34,7 +34,7 @@ services:
     container_name: vcdb
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1111
+      POSTGRES_PASSWORD: mirxonjon
       POSTGRES_DB: voice_transcribe
     ports:
       - "5436:5432"
@@ -63,5 +63,5 @@ networks:
 volumes:
   postgres_data:
     driver: local
-  minio_data:
-    driver: local
+  # minio_data:
+  #   driver: local
