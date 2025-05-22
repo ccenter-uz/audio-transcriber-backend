@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -20,6 +21,29 @@ import (
 )
 
 func Run(cfg *config.Config) {
+
+	loc, err := time.LoadLocation("Asia/Tashkent")
+	if err != nil {
+		panic(err)
+	}
+
+	slogger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			// "time" atributini Asia/Tashkentga o'zgartirish
+			if a.Key == slog.TimeKey {
+				if t, ok := a.Value.Any().(time.Time); ok {
+					return slog.Attr{
+						Key:   slog.TimeKey,
+						Value: slog.AnyValue(t.In(loc)),
+					}
+				}
+			}
+			return a
+		},
+	}))
+
+	slog.SetDefault(slogger)
+
 	l := logger.New(cfg.Log.Level)
 
 	pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.PoolMax))

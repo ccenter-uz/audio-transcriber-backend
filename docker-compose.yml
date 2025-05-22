@@ -8,6 +8,8 @@ services:
       - 8080:8080
     networks:
       - ntwrk  
+    environment:
+      - TZ=Asia/Tashkent
     depends_on:
       vcdb:
         condition: service_started

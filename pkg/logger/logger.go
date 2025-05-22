@@ -2,8 +2,10 @@ package logger
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog"
 )
@@ -43,8 +45,22 @@ func New(level string) *Logger {
 
 	zerolog.SetGlobalLevel(l)
 
+	loc, err := time.LoadLocation("Asia/Tashkent")
+	if err != nil {
+		log.Printf("failed to load timezone Asia/Tashkent: %v, fallback to UTC", err)
+		loc = time.UTC
+	}
+
+	zerolog.TimestampFunc = func() time.Time {
+		return time.Now().In(loc)
+	}
+
 	skipFrameCount := 3
-	logger := zerolog.New(os.Stdout).With().Timestamp().CallerWithSkipFrameCount(zerolog.CallerSkipFrameCount + skipFrameCount).Logger()
+	logger := zerolog.New(os.Stdout).
+		With().
+		Timestamp().
+		CallerWithSkipFrameCount(zerolog.CallerSkipFrameCount + skipFrameCount).
+		Logger()
 
 	return &Logger{
 		logger: &logger,
