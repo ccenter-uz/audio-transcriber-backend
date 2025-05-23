@@ -52,16 +52,17 @@ type UserTranscriptStatictics struct {
 }
 
 type DatasetViewerList struct {
-	AudioID     int     `json:"audio_id"`
-	AudioUrl    string  `json:"audio_url"`
-	ChunkID     int     `json:"chunk_id"`
-	ChunkUrl    string  `json:"chunk_url"`
-	Duration    float32 `json:"duration"`
-	PreviouText *string `json:"previous_text"`
-	ChunkText   *string `json:"text"`
-	NextText    *string `json:"next_text"`
-	Sentence    *string `json:"sentence"`
-	Transcriber *string `json:"transcriber"`
+	AudioID       int     `json:"audio_id"`
+	AudioUrl      string  `json:"audio_url"`
+	ChunkID       int     `json:"chunk_id"`
+	ChunkUrl      string  `json:"chunk_url"`
+	Duration      float32 `json:"duration"`
+	PreviouText   *string `json:"previous_text"`
+	ChunkText     *string `json:"text"`
+	NextText      *string `json:"next_text"`
+	Sentence      *string `json:"sentence"`
+	Transcriber   *string `json:"transcriber"`
+	TranscriberID *string `json:"transcriber_id"`
 }
 
 type Statistics struct {

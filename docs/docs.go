@@ -783,6 +783,9 @@ const docTemplate = `{
                 },
                 "transcriber": {
                     "type": "string"
+                },
+                "transcriber_id": {
+                    "type": "string"
                 }
             }
         },

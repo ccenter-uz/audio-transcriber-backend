@@ -300,7 +300,8 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			LAG(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS previous_text,
 			LEAD(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS next_text,
 			aggregated_segments.all_transcripts,
-			u.username
+			u.username,
+			u.id
 		FROM audio_files af
 		JOIN audio_file_segments afs ON af.id = afs.audio_id
 		JOIN transcripts t ON afs.id = t.segment_id
@@ -341,6 +342,7 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			&reps.NextText,
 			&reps.Sentence,
 			&reps.Transcriber,
+			&reps.TranscriberID,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan dataset viewer: %w", err)
