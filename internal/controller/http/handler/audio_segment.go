@@ -205,6 +205,8 @@ func (h *Handler) GetUserTranscriptStatictics(ctx *gin.Context) {
 // @Tags dashboard
 // @Accept  json
 // @Produce  json
+// @Param user_id query string false "User ID"
+// @Param report query bool false "Report"
 // @Param offset query number false "Offset for pagination"
 // @Param limit query number false "Limit for pagination"
 // @Success 200 {object} entity.DatasetViewerList
@@ -215,6 +217,14 @@ func (h *Handler) DatasetViewer(ctx *gin.Context) {
 	// Parse optional pagination parameters
 	pageStr := ctx.Query("offset")
 	limitStr := ctx.Query("limit")
+	user_id := ctx.Query("user_id")
+	report := ctx.Query("report")
+	reportBool, err := strconv.ParseBool(report)
+	if err != nil {
+		slog.Error("Error parsing report parameter: ", err)
+		ctx.JSON(400, gin.H{"Error": "Invalid report parameter"})
+		return
+	}
 
 	// If page & limit are provided, validate them
 	limitValue, offsetValue, err := parsePaginationParams(ctx, limitStr, pageStr)
@@ -227,7 +237,7 @@ func (h *Handler) DatasetViewer(ctx *gin.Context) {
 	req.Offset = offsetValue
 
 	// Fetch audio_segment
-	dataset_viewer, err := h.UseCase.AudioSegmentRepo.DatasetViewer(ctx, &req)
+	dataset_viewer, err := h.UseCase.AudioSegmentRepo.DatasetViewer(ctx, &req, user_id, reportBool)
 	if h.HandleDbError(ctx, err, "Error getting audio_segment") {
 		slog.Error("DatasetViewer error", slog.String("error", err.Error()))
 		return

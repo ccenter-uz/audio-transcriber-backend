@@ -378,6 +378,18 @@ const docTemplate = `{
                 "summary": "Get a list of dataset_viewer",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Report",
+                        "name": "report",
+                        "in": "query"
+                    },
+                    {
                         "type": "number",
                         "description": "Offset for pagination",
                         "name": "offset",

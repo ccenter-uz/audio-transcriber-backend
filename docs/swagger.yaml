@@ -422,6 +422,14 @@ paths:
       - application/json
       description: Get a list of dataset_viewer
       parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        type: string
+      - description: Report
+        in: query
+        name: report
+        type: boolean
       - description: Offset for pagination
         in: query
         name: offset

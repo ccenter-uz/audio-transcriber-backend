@@ -152,6 +152,7 @@ CREATE OR REPLACE FUNCTION update_audio_file_status_from_transcripts()
 RETURNS TRIGGER AS $$
 DECLARE
     segment_audio_id INT;
+    ready_count INT;
 BEGIN
     SELECT afs.audio_id INTO segment_audio_id
     FROM audio_file_segments afs
@@ -168,13 +169,25 @@ BEGIN
         WHERE id = segment_audio_id AND status != 'done';
     END IF;
 
+    SELECT COUNT(*) INTO ready_count
+    FROM transcripts t
+    JOIN audio_file_segments afs ON afs.id = t.segment_id
+    WHERE afs.audio_id = segment_audio_id
+      AND afs.deleted_at = 0
+      AND t.status = 'ready';
+
+    IF ready_count = 0 THEN
+        UPDATE audio_files
+        SET status = 'done',
+            updated_at = NOW()
+        WHERE id = segment_audio_id;
+    END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-
 CREATE TRIGGER trg_update_audio_status
 AFTER INSERT OR UPDATE ON transcripts
 FOR EACH ROW
-WHEN (NEW.status = 'done')
 EXECUTE FUNCTION update_audio_file_status_from_transcripts();

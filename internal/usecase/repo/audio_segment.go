@@ -288,7 +288,7 @@ func (r *AudioSegmentRepo) GetUserTranscriptStatictics(ctx context.Context, user
 
 	return &res, nil
 }
-func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter) (*[]entity.DatasetViewerList, error) {
+func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report bool) (*[]entity.DatasetViewerList, error) {
 	query := `
 					SELECT
 			af.id AS audio_id,
@@ -305,7 +305,7 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 		FROM audio_files af
 		JOIN audio_file_segments afs ON af.id = afs.audio_id
 		JOIN transcripts t ON afs.id = t.segment_id
-		LEFT JOIN users u ON t.user_id = u.id
+		LEFT JOIN users u ON af.user_id = u.id
 		JOIN (
 			SELECT
 				af.id AS audio_id,
@@ -320,10 +320,24 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			af.deleted_at = 0
 			AND afs.deleted_at = 0
 			AND t.deleted_at = 0
+			AND af.status <> 'pending'
+		`
+
+	args := []interface{}{req.Limit, req.Offset}
+	if user_id != "" {
+		query += " AND u.id = $3"
+		args = append(args, user_id)
+	}
+
+	if report {
+		query += ` AND t.status = 'invalid'`
+	}
+
+	query += `
 		ORDER BY af.id, afs.id
-		LIMIT $1 OFFSET $2;
-`
-	rows, err := r.pg.Pool.Query(ctx, query, req.Limit, req.Offset)
+		LIMIT $1 OFFSET $2;`
+
+	rows, err := r.pg.Pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dataset viewer: %w", err)
 	}
