@@ -29,13 +29,21 @@ type UpdateUserBody struct {
 	// Role     string `json:"role"`
 }
 
+type User struct {
+	AgentID      string  `json:"agent_id"`
+	ServiceName  string  `json:"service_name"`
+	Name         string  `json:"name"`
+	FirstNumber  string  `json:"first_number"`
+	CreateDate   string  `json:"create_date"`
+}
+
 type GetUserReq struct {
 	Username string `json:"username"`
 	Role     string `json:"role"`
 	Filter   Filter `json:"filter"`
 }
 type UserList struct {
-	Users []UserInfo `json:"users"`
+	Users []User `json:"users"`
 	Count int        `json:"count"`
 }
 

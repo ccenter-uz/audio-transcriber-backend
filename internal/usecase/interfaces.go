@@ -15,7 +15,7 @@ type (
 		Login(ctx context.Context, req *entity.LoginReq) (*entity.UserInfo, error)
 		Create(ctx context.Context, req *entity.UserInfo) error
 		// GetById(ctx context.Context, id int) (*entity.User, error)
-		// GetList(ctx context.Context, req *entity.GetUserReq) (*entity.UserList, error)
+		GetList(ctx context.Context, req *entity.GetUserReq) (*entity.UserList, error)
 		// Update(ctx context.Context, req *entity.UpdateUser) error
 		// Delete(ctx context.Context, id int) error
 	}

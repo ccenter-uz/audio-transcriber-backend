@@ -222,51 +222,44 @@ func (h *Handler) GetUser(ctx *gin.Context) {
 	})
 }
 
-// // GetUsers godoc
-// // @Router /api/v1/user/list [get]
-// // @Summary Get a list of users
-// // @Description Get a list of users
-// // @Security BearerAuth
-// // @Tags user
-// // @Accept  json
-// // @Produce  json
-// // @Param offset query number false "Offset for pagination"
-// // @Param limit query number false "Limit for pagination"
-// // @Param username query string false "Search by username"
-// // @Param role query string false "Filter by user role"
-// // @Success 200 {object} entity.UserList
-// // @Failure 400 {object} entity.ErrorResponse
-// func (h *Handler) GetUsers(ctx *gin.Context) {
-// 	var req entity.GetUserReq
+// GetUsers godoc
+// @Router /api/v1/user/list [get]
+// @Summary Get a list of users
+// @Description Get a list of users
+// @Security BearerAuth
+// @Tags user
+// @Accept  json
+// @Produce  json
+// @Param offset query number false "Offset for pagination"
+// @Param limit query number false "Limit for pagination"
+// @Param name query string false "Search by name"
+// @Success 200 {object} entity.UserList
+// @Failure 400 {object} entity.ErrorResponse
+func (h *Handler) GetUsers(ctx *gin.Context) {
+	var req entity.GetUserReq
 
-// 	// Parse optional pagination parameters
-// 	pageStr := ctx.Query("offset")
-// 	limitStr := ctx.Query("limit")
+	pageStr := ctx.Query("offset")
+	limitStr := ctx.Query("limit")
 
-// 	// If page & limit are provided, validate them
-// 	limitValue, offsetValue, err := parsePaginationParams(ctx, limitStr, pageStr)
-// 	if err != nil {
-// 		ctx.JSON(400, gin.H{"Error": err.Error()})
-// 		slog.Error("Error parsing pagination parameters: ", err)
-// 		return
-// 	}
+	limitValue, offsetValue, err := parsePaginationParams(ctx, limitStr, pageStr)
+	if err != nil {
+		ctx.JSON(400, gin.H{"Error": err.Error()})
+		slog.Error("Error parsing pagination parameters: ", err)
+		return
+	}
 
-// 	// Assign other filters
-// 	req.Username = ctx.Query("username")
-// 	req.Role = ctx.Query("role")
-// 	req.Filter.Limit = limitValue
-// 	req.Filter.Offset = offsetValue
+	req.Username = ctx.Query("name")
+	req.Filter.Limit = limitValue
+	req.Filter.Offset = offsetValue
 
-// 	// Fetch users
-// 	users, err := h.UseCase.AuthRepo.GetList(ctx, &req)
-// 	if h.HandleDbError(ctx, err, "Error getting users") {
-// 		slog.Error("GetUsers error", slog.String("error", err.Error()))
-// 		return
-// 	}
+	users, err := h.UseCase.AuthRepo.GetList(ctx, &req)
+	if h.HandleDbError(ctx, err, "Error getting users") {
+		slog.Error("GetUsers error", slog.String("error", err.Error()))
+		return
+	}
 
-// 	// Return response
-// 	ctx.JSON(http.StatusOK, users)
-// }
+	ctx.JSON(http.StatusOK, users)
+}
 
 // // UpdateUser godoc
 // // @Router /api/v1/user/update [put]

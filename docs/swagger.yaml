@@ -156,6 +156,19 @@ definitions:
       transcribe_text:
         type: string
     type: object
+  entity.User:
+    properties:
+      agent_id:
+        type: string
+      create_date:
+        type: string
+      first_number:
+        type: string
+      name:
+        type: string
+      service_name:
+        type: string
+    type: object
   entity.UserInfo:
     properties:
       agent_id:
@@ -176,6 +189,15 @@ definitions:
         type: string
       service_name:
         type: string
+    type: object
+  entity.UserList:
+    properties:
+      count:
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/entity.User'
+        type: array
     type: object
   entity.UserTranscriptStatictics:
     properties:
@@ -638,6 +660,40 @@ paths:
       summary: Upload Zip file
       tags:
       - audio
+  /api/v1/user/list:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of users
+      parameters:
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: number
+      - description: Limit for pagination
+        in: query
+        name: limit
+        type: number
+      - description: Search by name
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UserList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a list of users
+      tags:
+      - user
 securityDefinitions:
   BearerAuth:
     in: header

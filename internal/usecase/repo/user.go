@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mirjalilova/voice_transcribe/config"
@@ -128,54 +130,50 @@ func (r *AuthRepo) Create(ctx context.Context, req *entity.UserInfo) error {
 // 	return user, nil
 // }
 
-// func (r *AuthRepo) GetList(ctx context.Context, req *entity.GetUserReq) (*entity.UserList, error) {
-// 	query := `
-// 	SELECT COUNT(id) OVER () AS total_count, id, username, role, created_at
-// 	FROM users
-// 	WHERE deleted_at = 0
-// 	`
+func (r *AuthRepo) GetList(ctx context.Context, req *entity.GetUserReq) (*entity.UserList, error) {
+	query := `
+	SELECT COUNT(id) OVER () AS total_count, id, username, first_number, service_name, created_at
+	FROM users
+	WHERE deleted_at = 0
+	`
 
-// 	var conditions []string
-// 	var args []interface{}
-// 	if req.Username != "" {
-// 		conditions = append(conditions, " username ILIKE $"+strconv.Itoa(len(args)+1))
-// 		args = append(args, "%"+req.Username+"%")
-// 	}
-// 	if req.Role != "" {
-// 		conditions = append(conditions, " role = $"+strconv.Itoa(len(args)+1))
-// 		args = append(args, req.Role)
-// 	}
+	var conditions []string
+	var args []interface{}
+	if req.Username != "" {
+		conditions = append(conditions, " username ILIKE $"+strconv.Itoa(len(args)+1))
+		args = append(args, "%"+req.Username+"%")
+	}
 
-// 	if len(conditions) > 0 {
-// 		query += " AND " + strings.Join(conditions, " AND ")
-// 	}
+	if len(conditions) > 0 {
+		query += " AND " + strings.Join(conditions, " AND ")
+	}
 
-// 	query += ` ORDER BY created_at DESC OFFSET $` + strconv.Itoa(len(args)+1) + ` LIMIT $` + strconv.Itoa(len(args)+2)
+	query += ` ORDER BY created_at DESC OFFSET $` + strconv.Itoa(len(args)+1) + ` LIMIT $` + strconv.Itoa(len(args)+2)
 
-// 	args = append(args, req.Filter.Offset, req.Filter.Limit)
+	args = append(args, req.Filter.Offset, req.Filter.Limit)
 
-// 	rows, err := r.pg.Pool.Query(ctx, query, args...)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to get user list: %w", err)
-// 	}
-// 	defer rows.Close()
+	rows, err := r.pg.Pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user list: %w", err)
+	}
+	defer rows.Close()
 
-// 	users := entity.UserList{}
-// 	for rows.Next() {
-// 		var count int
-// 		var createdAt time.Time
-// 		user := entity.User{}
-// 		err := rows.Scan(&count, &user.Id, &user.Username, &user.Role, &createdAt)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("failed to scan user: %w", err)
-// 		}
-// 		user.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
-// 		users.Users = append(users.Users, user)
-// 		users.Count = count
-// 	}
+	users := entity.UserList{}
+	for rows.Next() {
+		var count int
+		var createdAt time.Time
+		user := entity.User{}
+		err := rows.Scan(&count, &user.AgentID, &user.Name, &user.FirstNumber, &user.ServiceName, &createdAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+		user.CreateDate = createdAt.Format("2006-01-02 15:04:05")
+		users.Users = append(users.Users, user)
+		users.Count = count
+	}
 
-// 	return &users, nil
-// }
+	return &users, nil
+}
 
 // func (r *AuthRepo) Delete(ctx context.Context, id int) error {
 // 	query := `
