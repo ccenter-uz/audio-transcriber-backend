@@ -93,7 +93,7 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 
 		// // user
 		// router.POST("/user/create", handlerV1.CreateUser)
-		// router.GET("/user/list", handlerV1.GetUsers)
+		router.GET("/user/list", handlerV1.GetUsers)
 		// router.GET("/user/:id", handlerV1.GetUser)
 		// router.PUT("/user/update", handlerV1.UpdateUser)
 		// router.DELETE("/user/delete", handlerV1.DeleteUser)
