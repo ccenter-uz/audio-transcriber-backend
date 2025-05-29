@@ -288,7 +288,7 @@ func (r *AudioSegmentRepo) GetUserTranscriptStatictics(ctx context.Context, user
 
 	return &res, nil
 }
-func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report bool) (*[]entity.DatasetViewerList, error) {
+func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report bool) (*entity.DatasetViewerListResponse, error) {
 	query := `
 					SELECT
 			af.id AS audio_id,
@@ -372,7 +372,12 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 	if len(res) == 0 {
 		return nil, fmt.Errorf("no dataset viewer found")
 	}
-	return &res, nil
+
+	response := &entity.DatasetViewerListResponse{
+		Total: len(res),
+		Data:  res,
+	}
+	return response, nil
 }
 
 func (r *AudioSegmentRepo) GetStatistics(ctx context.Context) (*entity.Statistics, error) {

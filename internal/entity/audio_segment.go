@@ -66,6 +66,11 @@ type DatasetViewerList struct {
 	TranscriberID *string `json:"transcriber_id"`
 }
 
+type DatasetViewerListResponse struct {
+	Total int                 `json:"total"`
+	Data  []DatasetViewerList `json:"data"`
+}
+
 type Statistics struct {
 	Duration    map[string]int `json:"duration"`
 	Text        map[string]int `json:"text"`
