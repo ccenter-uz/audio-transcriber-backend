@@ -61,6 +61,7 @@ type DatasetViewerList struct {
 	ChunkText     *string `json:"text"`
 	NextText      *string `json:"next_text"`
 	Sentence      *string `json:"sentence"`
+	ReportText    *string `json:"report_text"`
 	Transcriber   *string `json:"transcriber"`
 	TranscriberID *string `json:"transcriber_id"`
 }

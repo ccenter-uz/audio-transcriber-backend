@@ -841,6 +841,9 @@ const docTemplate = `{
                 "previous_text": {
                     "type": "string"
                 },
+                "report_text": {
+                    "type": "string"
+                },
                 "sentence": {
                     "type": "string"
                 },

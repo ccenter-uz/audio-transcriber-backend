@@ -300,6 +300,7 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			LAG(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS previous_text,
 			LEAD(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS next_text,
 			aggregated_segments.all_transcripts,
+			t.report_text,
 			u.username,
 			u.id
 		FROM audio_files af
@@ -355,6 +356,7 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			&reps.PreviouText,
 			&reps.NextText,
 			&reps.Sentence,
+			&reps.ReportText,
 			&reps.Transcriber,
 			&reps.TranscriberID,
 		)

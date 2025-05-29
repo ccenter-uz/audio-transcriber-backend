@@ -51,6 +51,8 @@ definitions:
         type: string
       previous_text:
         type: string
+      report_text:
+        type: string
       sentence:
         type: string
       text:
