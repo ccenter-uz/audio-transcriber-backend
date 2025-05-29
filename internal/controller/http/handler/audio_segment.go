@@ -209,7 +209,7 @@ func (h *Handler) GetUserTranscriptStatictics(ctx *gin.Context) {
 // @Param report query bool false "Report"
 // @Param offset query number false "Offset for pagination"
 // @Param limit query number false "Limit for pagination"
-// @Success 200 {object} entity.DatasetViewerList
+// @Success 200 {object} entity.DatasetViewerListResponse
 // @Failure 400 {object} entity.ErrorResponse
 func (h *Handler) DatasetViewer(ctx *gin.Context) {
 	var req entity.Filter

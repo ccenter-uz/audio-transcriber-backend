@@ -406,7 +406,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.DatasetViewerList"
+                            "$ref": "#/definitions/entity.DatasetViewerListResponse"
                         }
                     },
                     "400": {
@@ -855,6 +855,20 @@ const docTemplate = `{
                 },
                 "transcriber_id": {
                     "type": "string"
+                }
+            }
+        },
+        "entity.DatasetViewerListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.DatasetViewerList"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },

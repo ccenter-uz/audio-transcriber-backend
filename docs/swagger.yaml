@@ -62,6 +62,15 @@ definitions:
       transcriber_id:
         type: string
     type: object
+  entity.DatasetViewerListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/entity.DatasetViewerList'
+        type: array
+      total:
+        type: integer
+    type: object
   entity.ErrorResponse:
     properties:
       code:
@@ -468,7 +477,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entity.DatasetViewerList'
+            $ref: '#/definitions/entity.DatasetViewerListResponse'
         "400":
           description: Bad Request
           schema:
