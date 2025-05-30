@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/mirjalilova/voice_transcribe/config"
 	v1 "github.com/mirjalilova/voice_transcribe/internal/controller/http"
@@ -62,9 +63,14 @@ func Run(cfg *config.Config) {
 		return
 	}
 
+	// Redis
+	var rdb = redis.NewClient(&redis.Options{
+		Addr: "redis:6379",
+	})
+
 	// HTTP Server
 	handler := gin.New()
-	v1.NewRouter(handler, l, cfg, useCase, minioClient)
+	v1.NewRouter(handler, l, cfg, useCase, minioClient, rdb)
 
 	httpServer := httpserver.New(handler, httpserver.Port(cfg.HTTP.Port))
 

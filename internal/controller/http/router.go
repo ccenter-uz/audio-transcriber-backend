@@ -10,6 +10,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
@@ -41,12 +42,12 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useCase *usecase.UseCase, minioClient *minio.MinIO) {
+func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useCase *usecase.UseCase, minioClient *minio.MinIO, rdb *redis.Client) {
 	// Options
 	engine.Use(gin.Logger())
 	//engine.Use(gin.Recovery())
 
-	handlerV1 := handler.NewHandler(l, config, useCase, *minioClient)
+	handlerV1 := handler.NewHandler(l, config, useCase, *minioClient, rdb)
 
 	// Initialize Casbin enforcer
 
@@ -93,31 +94,31 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 
 		// // user
 		// router.POST("/user/create", handlerV1.CreateUser)
-		router.GET("/user/list", handlerV1.GetUsers)
+		router.GET("/user/list", middleware.NewAuth(enforcer), handlerV1.GetUsers)
 		// router.GET("/user/:id", handlerV1.GetUser)
 		// router.PUT("/user/update", handlerV1.UpdateUser)
 		// router.DELETE("/user/delete", handlerV1.DeleteUser)
 
 		// transcript
-		router.GET("/transcript/list", handlerV1.GetTranscripts)
-		router.GET("/transcript/:id", handlerV1.GetTranscript)
+		router.GET("/transcript/list", middleware.NewAuth(enforcer), handlerV1.GetTranscripts)
+		router.GET("/transcript/:id", middleware.NewAuth(enforcer), handlerV1.GetTranscript)
 		router.PUT("/transcript/update", middleware.NewAuth(enforcer), handlerV1.UpdateTranscript)
 		// router.PUT("/transcript/update/status", handlerV1.UpdateStatus)
-		router.DELETE("/transcript/delete", handlerV1.DeleteTranscript)
+		router.DELETE("/transcript/delete", middleware.NewAuth(enforcer), handlerV1.DeleteTranscript)
 
 		// audio_segment
 		router.GET("/audio_segment", middleware.NewAuth(enforcer), handlerV1.GetAudioSegments)
 		router.GET("/audio_segment/:id", middleware.NewAuth(enforcer), handlerV1.GetAudioSegment)
-		router.DELETE("/audio_segment/delete", handlerV1.DeleteAudioSegment)
+		router.DELETE("/audio_segment/delete", middleware.NewAuth(enforcer), handlerV1.DeleteAudioSegment)
 
 		// dashboard
-		router.GET("/dashboard", handlerV1.GetTranscriptPercent)
-		router.GET("/dashboard/user/:user_id", handlerV1.GetUserTranscriptStatictics)
-		router.GET("/dataset_viewer", handlerV1.DatasetViewer)
-		router.GET("/statistic", handlerV1.GetStatistic)
+		router.GET("/dashboard", middleware.NewAuth(enforcer), handlerV1.GetTranscriptPercent)
+		router.GET("/dashboard/user/:user_id", middleware.NewAuth(enforcer), handlerV1.GetUserTranscriptStatictics)
+		router.GET("/dataset_viewer", middleware.NewAuth(enforcer), handlerV1.DatasetViewer)
+		router.GET("/statistic", middleware.NewAuth(enforcer), handlerV1.GetStatistic)
 
 		// audio
-		router.POST("/upload-zip-audio", handlerV1.UploadZipAndExtractAudio)
-		router.GET("/audio_file/:id", handlerV1.GetAudioFile)
+		router.POST("/upload-zip-audio", middleware.NewAuth(enforcer), handlerV1.UploadZipAndExtractAudio)
+		router.GET("/audio_file/:id", middleware.NewAuth(enforcer), handlerV1.GetAudioFile)
 	}
 }
