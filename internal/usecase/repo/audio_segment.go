@@ -288,21 +288,9 @@ func (r *AudioSegmentRepo) GetUserTranscriptStatictics(ctx context.Context, user
 
 	return &res, nil
 }
+
 func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report bool) (*entity.DatasetViewerListResponse, error) {
-	query := `
-					SELECT
-			af.id AS audio_id,
-			af.filename AS audio_filename,
-			afs.id AS chunk_id,
-			afs.filename AS segment_filename,
-			afs.duration,
-			t.transcribe_text AS chunk_text,
-			LAG(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS previous_text,
-			LEAD(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS next_text,
-			aggregated_segments.all_transcripts,
-			t.report_text,
-			u.username,
-			u.id
+	baseQuery := `
 		FROM audio_files af
 		JOIN audio_file_segments afs ON af.id = afs.audio_id
 		JOIN transcripts t ON afs.id = t.segment_id
@@ -322,27 +310,61 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			AND afs.deleted_at = 0
 			AND t.deleted_at = 0
 			AND af.status <> 'pending'
-		`
+	`
 
-	args := []interface{}{req.Limit, req.Offset}
+	conditions := []string{}
+	args := []interface{}{}
+	argIdx := 1
+
 	if user_id != "" {
-		query += " AND u.id = $3"
+		conditions = append(conditions, fmt.Sprintf("u.id = $%d", argIdx))
 		args = append(args, user_id)
+		argIdx++
 	}
 
+	statusCondition := "t.status = 'done'"
 	if report {
-		query += ` AND t.status = 'invalid'`
+		statusCondition = "t.status = 'invalid'"
+	}
+	baseQuery += fmt.Sprintf(" AND %s", statusCondition)
+	
+
+	if len(conditions) > 0 {
+		baseQuery += " AND " + strings.Join(conditions, " AND ")
 	}
 
-	query += `
-		ORDER BY af.id, afs.id
-		LIMIT $1 OFFSET $2;`
+	countQuery := "SELECT COUNT(*) " + baseQuery
+	var total int
+	err := r.pg.Pool.QueryRow(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count dataset viewer rows: %w", err)
+	}
 
-	rows, err := r.pg.Pool.Query(ctx, query, args...)
+	selectQuery := `
+		SELECT
+			af.id AS audio_id,
+			af.filename AS audio_filename,
+			afs.id AS chunk_id,
+			afs.filename AS segment_filename,
+			afs.duration,
+			t.transcribe_text AS chunk_text,
+			LAG(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS previous_text,
+			LEAD(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS next_text,
+			aggregated_segments.all_transcripts,
+			t.report_text,
+			u.username,
+			u.id
+	` + baseQuery + `
+		ORDER BY af.id, afs.id
+		LIMIT $` + fmt.Sprint(argIdx) + ` OFFSET $` + fmt.Sprint(argIdx+1)
+	args = append(args, req.Limit, req.Offset)
+
+	rows, err := r.pg.Pool.Query(ctx, selectQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dataset viewer: %w", err)
 	}
 	defer rows.Close()
+
 	res := []entity.DatasetViewerList{}
 	for rows.Next() {
 		reps := entity.DatasetViewerList{}
@@ -363,21 +385,16 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan dataset viewer: %w", err)
 		}
-
 		res = append(res, reps)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("failed to iterate over dataset viewer rows: %w", err)
 	}
-	if len(res) == 0 {
-		return nil, fmt.Errorf("no dataset viewer found")
-	}
 
-	response := &entity.DatasetViewerListResponse{
-		Total: len(res),
+	return &entity.DatasetViewerListResponse{
+		Total: total,
 		Data:  res,
-	}
-	return response, nil
+	}, nil
 }
 
 func (r *AudioSegmentRepo) GetStatistics(ctx context.Context) (*entity.Statistics, error) {
