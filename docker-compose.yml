@@ -5,7 +5,7 @@ services:
     env_file:
       - .env
     ports:
-      - 8080:8080
+      - 8081:8081
     networks:
       - ntwrk  
     environment:
@@ -17,7 +17,7 @@ services:
         condition: service_started
   minio:
     image: minio/minio
-    container_name: minioo
+    container_name: miniooo
     environment:
       - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
       - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}

@@ -1012,6 +1012,9 @@ const docTemplate = `{
         "entity.UpdateTranscriptBody": {
             "type": "object",
             "properties": {
+                "entire_audio_invalid": {
+                    "type": "boolean"
+                },
                 "report_text": {
                     "type": "string"
                 },

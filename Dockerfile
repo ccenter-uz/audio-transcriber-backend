@@ -26,6 +26,6 @@ RUN ln -snf /usr/share/zoneinfo/Asia/Tashkent /etc/localtime && echo "Asia/Tashk
 
 RUN chmod +x /app/voice_transcribe
 
-EXPOSE 8080
+EXPOSE 8081
 
 CMD ["/app/voice_transcribe"]

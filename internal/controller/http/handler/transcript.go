@@ -143,10 +143,11 @@ func (h *Handler) UpdateTranscript(ctx *gin.Context) {
 	}
 
 	err = h.UseCase.TranscriptRepo.Update(ctx, &entity.UpdateTranscript{
-		Id:             intId,
-		TranscriptText: body.TranscriptText,
-		ReportText:     body.ReportText,
-		UserID:         &user_id,
+		Id:                 intId,
+		TranscriptText:     body.TranscriptText,
+		ReportText:         body.ReportText,
+		UserID:             &user_id,
+		EntireAudioInvalid: body.EntireAudioInvalid,
 	})
 	if err != nil {
 		slog.Error("UpdateTranscript error", slog.String("error", err.Error()))

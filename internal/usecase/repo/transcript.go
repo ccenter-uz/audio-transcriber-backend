@@ -88,6 +88,47 @@ func (r *TranscriptRepo) Update(ctx context.Context, req *entity.UpdateTranscrip
 	}
 
 	if req.ReportText != "" && req.ReportText != "string" {
+		if req.EntireAudioInvalid {
+			query1 := `
+					WITH target_audio_file AS (
+						SELECT audio_id
+						FROM audio_file_segments
+						WHERE id = $1
+					),
+					segments_of_audio AS (
+						SELECT id
+						FROM audio_file_segments
+						WHERE audio_id = (SELECT audio_id FROM target_audio_file)
+					)
+					UPDATE transcripts
+					SET status = 'invalid',
+						updated_at = NOW()
+					WHERE segment_id IN (SELECT id FROM segments_of_audio)
+				`
+
+				_, err := tr.Exec(ctx, query1, req.Id)
+				if err != nil {
+					tr.Rollback(ctx)
+					return fmt.Errorf("failed to update transcript status: %w", err)
+				}
+
+				query2 := `
+					UPDATE audio_files
+					SET status = 'error',
+						updated_at = NOW()
+					WHERE id = (
+						SELECT audio_id
+						FROM audio_file_segments
+						WHERE id = $1
+					)
+				`
+
+				_, err = tr.Exec(ctx, query2, req.Id)
+				if err != nil {
+					tr.Rollback(ctx)
+					return fmt.Errorf("failed to update audio file status: %w", err)
+				}
+		}
 
 		query = `UPDATE transcripts SET status = 'invalid', updated_at = now() WHERE segment_id = $1 AND deleted_at = 0`
 		_, err = tr.Exec(ctx, query, req.Id)

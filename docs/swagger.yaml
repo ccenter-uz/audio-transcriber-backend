@@ -162,6 +162,8 @@ definitions:
     type: object
   entity.UpdateTranscriptBody:
     properties:
+      entire_audio_invalid:
+        type: boolean
       report_text:
         type: string
       transcribe_text:

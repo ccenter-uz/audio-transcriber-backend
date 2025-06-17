@@ -20,15 +20,17 @@ type CreateTranscript struct {
 }
 
 type UpdateTranscript struct {
-	Id             int     `json:"id"`
-	TranscriptText string  `json:"transcribe_text"`
-	ReportText     string  `json:"report_text"`
-	UserID         *string `json:"user_id"`
+	Id                 int     `json:"id"`
+	TranscriptText     string  `json:"transcribe_text"`
+	ReportText         string  `json:"report_text"`
+	UserID             *string `json:"user_id"`
+	EntireAudioInvalid bool    `json:"entire_audio_invalid"`
 }
 
 type UpdateTranscriptBody struct {
-	TranscriptText string `json:"transcribe_text"`
-	ReportText     string `json:"report_text"`
+	TranscriptText     string `json:"transcribe_text"`
+	ReportText         string `json:"report_text"`
+	EntireAudioInvalid bool   `json:"entire_audio_invalid"`
 }
 
 type GetTranscriptReq struct {
