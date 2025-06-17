@@ -153,6 +153,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     segment_audio_id INT;
     ready_count INT;
+    invalid_count INT;
 BEGIN
     SELECT afs.audio_id INTO segment_audio_id
     FROM audio_file_segments afs
@@ -162,13 +163,6 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    IF NEW.status = 'done' THEN
-        UPDATE audio_files
-        SET status = 'processing',
-            updated_at = NOW()
-        WHERE id = segment_audio_id AND status != 'done';
-    END IF;
-
     SELECT COUNT(*) INTO ready_count
     FROM transcripts t
     JOIN audio_file_segments afs ON afs.id = t.segment_id
@@ -176,9 +170,26 @@ BEGIN
       AND afs.deleted_at = 0
       AND t.status = 'ready';
 
-    IF ready_count = 0 THEN
+    SELECT COUNT(*) INTO invalid_count
+    FROM transcripts t
+    JOIN audio_file_segments afs ON afs.id = t.segment_id
+    WHERE afs.audio_id = segment_audio_id
+      AND afs.deleted_at = 0
+      AND t.status = 'invalid';
+
+    IF invalid_count > 0 THEN
+        UPDATE audio_files
+        SET status = 'error',
+            updated_at = NOW()
+        WHERE id = segment_audio_id;
+    ELSIF ready_count = 0 THEN
         UPDATE audio_files
         SET status = 'done',
+            updated_at = NOW()
+        WHERE id = segment_audio_id;
+    ELSE
+        UPDATE audio_files
+        SET status = 'processing',
             updated_at = NOW()
         WHERE id = segment_audio_id;
     END IF;
