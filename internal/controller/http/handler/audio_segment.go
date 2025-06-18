@@ -349,3 +349,24 @@ func (h *Handler) GetStatistic(ctx *gin.Context) {
 	slog.Info("Statistic retrieved successfully")
 	ctx.JSON(http.StatusOK, statistic)
 }
+
+// GetDailyAudioTranscriptStats godoc
+// @Router /api/v1/dashboard/stats [get]
+// @Summary Get Daily AudioT ranscript Stats
+// @Description Get the Get Daily AudioT ranscript Stats
+// @Security BearerAuth
+// @Tags dashboard
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} []entity.TranscriptStatictics
+// @Failure 400 {object} entity.ErrorResponse
+func (h *Handler) GetDailyAudioTranscriptStats(ctx *gin.Context) {
+	res, err := h.UseCase.AudioSegmentRepo.GetDailyAudioTranscriptStats(ctx)
+	if h.HandleDbError(ctx, err, "Error getting audio transcript stats") {
+		slog.Error("GetDailyAudioTranscriptStats error", slog.String("error", err.Error()))
+		return
+	}
+
+	// Return response
+	ctx.JSON(http.StatusOK, res)
+}

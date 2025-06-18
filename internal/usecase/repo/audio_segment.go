@@ -581,3 +581,46 @@ func (r *AudioSegmentRepo) GetStatistics(ctx context.Context) (*entity.Statistic
 
 // 	return &res, nil
 // }
+
+
+
+
+func (r *AudioSegmentRepo) GetDailyAudioTranscriptStats(ctx context.Context) (*[]entity.TranscriptStatictics, error) {
+
+	query := `SELECT * FROM get_daily_audio_transcript_stats()`
+
+	resp := []entity.TranscriptStatictics{}
+
+	rows, err := r.pg.Pool.Query(ctx, query)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no daily audio transcript stats found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to get daily audio transcript stats: %w", err)
+	}
+
+	for rows.Next() {
+		var stateDate time.Time
+		var res entity.TranscriptStatictics
+		err := rows.Scan(
+			&stateDate,
+			&res.DoneChunks,
+			&res.DoneAudioFiles,
+			&res.InvalidChunks,
+			&res.ErrorAudioFiles,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan daily audio transcript stats: %w", err)
+		}
+		createdAt := stateDate.In(time.UTC)
+		res.StateDate = createdAt.Format("2006-01-02")
+
+		resp = append(resp, res)
+	}
+	
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan transcript statistics: %w", err)
+	}
+
+	return &resp, nil
+}

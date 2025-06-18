@@ -160,6 +160,19 @@ definitions:
       total_segments:
         type: integer
     type: object
+  entity.TranscriptStatictics:
+    properties:
+      done_audio_files:
+        type: integer
+      done_chunks:
+        type: integer
+      error_audio_files:
+        type: integer
+      invalid_chunks:
+        type: integer
+      state_date:
+        type: string
+    type: object
   entity.UpdateTranscriptBody:
     properties:
       entire_audio_invalid:
@@ -422,6 +435,29 @@ paths:
       security:
       - BearerAuth: []
       summary: Get a list of audio percent
+      tags:
+      - dashboard
+  /api/v1/dashboard/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get the Get Daily AudioT ranscript Stats
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entity.TranscriptStatictics'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Daily AudioT ranscript Stats
       tags:
       - dashboard
   /api/v1/dashboard/user/{user_id}:

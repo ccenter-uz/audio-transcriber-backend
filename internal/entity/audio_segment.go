@@ -51,6 +51,14 @@ type UserTranscriptStatictics struct {
 	DailyChunks      string  `json:"daily_chunks"`
 }
 
+type TranscriptStatictics struct {
+	StateDate       string `json:"state_date"`
+	DoneChunks      int    `json:"done_chunks"`
+	InvalidChunks   int    `json:"invalid_chunks"`
+	DoneAudioFiles  int    `json:"done_audio_files"`
+	ErrorAudioFiles int    `json:"error_audio_files"`
+}
+
 type DatasetViewerList struct {
 	AudioID       int     `json:"audio_id"`
 	AudioUrl      string  `json:"audio_url"`

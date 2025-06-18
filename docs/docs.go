@@ -315,6 +315,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dashboard/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the Get Daily AudioT ranscript Stats",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dashboard"
+                ],
+                "summary": "Get Daily AudioT ranscript Stats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entity.TranscriptStatictics"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dashboard/user/{user_id}": {
             "get": {
                 "security": [
@@ -1006,6 +1043,26 @@ const docTemplate = `{
                 },
                 "total_segments": {
                     "type": "integer"
+                }
+            }
+        },
+        "entity.TranscriptStatictics": {
+            "type": "object",
+            "properties": {
+                "done_audio_files": {
+                    "type": "integer"
+                },
+                "done_chunks": {
+                    "type": "integer"
+                },
+                "error_audio_files": {
+                    "type": "integer"
+                },
+                "invalid_chunks": {
+                    "type": "integer"
+                },
+                "state_date": {
+                    "type": "string"
                 }
             }
         },

@@ -40,6 +40,7 @@ type (
 		GetUserTranscriptStatictics(ctx context.Context, user_id string) (*entity.UserTranscriptStatictics, error)
 		DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report bool) (*entity.DatasetViewerListResponse, error)
 		GetStatistics(ctx context.Context) (*entity.Statistics, error)
+		GetDailyAudioTranscriptStats(ctx context.Context) (*[]entity.TranscriptStatictics, error)
 	}
 
 	// AudioFileRepo -.
