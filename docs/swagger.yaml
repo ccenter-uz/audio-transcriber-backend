@@ -170,8 +170,6 @@ definitions:
         type: integer
       invalid_chunks:
         type: integer
-      state_date:
-        type: string
     type: object
   entity.UpdateTranscriptBody:
     properties:
@@ -441,7 +439,16 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get the Get Daily AudioT ranscript Stats
+      description: Get the Get  AudioT ranscript Stats
+      parameters:
+      - description: From Date
+        in: query
+        name: fromDate
+        type: string
+      - description: To Date
+        in: query
+        name: toDate
+        type: string
       produces:
       - application/json
       responses:
@@ -457,7 +464,7 @@ paths:
             $ref: '#/definitions/entity.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get Daily AudioT ranscript Stats
+      summary: Get  AudioT ranscript Stats
       tags:
       - dashboard
   /api/v1/dashboard/user/{user_id}:

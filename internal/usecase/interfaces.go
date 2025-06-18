@@ -3,6 +3,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
 )
@@ -40,7 +41,7 @@ type (
 		GetUserTranscriptStatictics(ctx context.Context, user_id string) (*entity.UserTranscriptStatictics, error)
 		DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report bool) (*entity.DatasetViewerListResponse, error)
 		GetStatistics(ctx context.Context) (*entity.Statistics, error)
-		GetDailyAudioTranscriptStats(ctx context.Context) (*[]entity.TranscriptStatictics, error)
+		GetAudioTranscriptStats(ctx context.Context, fromDate, toDate time.Time) (*entity.TranscriptStatictics, error)
 	}
 
 	// AudioFileRepo -.

@@ -322,7 +322,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get the Get Daily AudioT ranscript Stats",
+                "description": "Get the Get  AudioT ranscript Stats",
                 "consumes": [
                     "application/json"
                 ],
@@ -332,7 +332,21 @@ const docTemplate = `{
                 "tags": [
                     "dashboard"
                 ],
-                "summary": "Get Daily AudioT ranscript Stats",
+                "summary": "Get  AudioT ranscript Stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "From Date",
+                        "name": "fromDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "To Date",
+                        "name": "toDate",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1060,9 +1074,6 @@ const docTemplate = `{
                 },
                 "invalid_chunks": {
                     "type": "integer"
-                },
-                "state_date": {
-                    "type": "string"
                 }
             }
         },

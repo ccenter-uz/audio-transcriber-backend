@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
@@ -350,20 +351,42 @@ func (h *Handler) GetStatistic(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, statistic)
 }
 
-// GetDailyAudioTranscriptStats godoc
+// GetAudioTranscriptStats godoc
 // @Router /api/v1/dashboard/stats [get]
-// @Summary Get Daily AudioT ranscript Stats
-// @Description Get the Get Daily AudioT ranscript Stats
+// @Summary Get  AudioT ranscript Stats
+// @Description Get the Get  AudioT ranscript Stats
 // @Security BearerAuth
 // @Tags dashboard
 // @Accept  json
 // @Produce  json
+// @Param fromDate query string false "From Date"
+// @Param toDate query string false "To Date"
 // @Success 200 {object} []entity.TranscriptStatictics
 // @Failure 400 {object} entity.ErrorResponse
-func (h *Handler) GetDailyAudioTranscriptStats(ctx *gin.Context) {
-	res, err := h.UseCase.AudioSegmentRepo.GetDailyAudioTranscriptStats(ctx)
+func (h *Handler) GetAudioTranscriptStats(ctx *gin.Context) {
+
+	fromDate, err := time.Parse("2006-01-02", ctx.Query("fromDate"))
+	if err != nil {
+		slog.Error("GetAudioTranscriptStats error", slog.String("error", err.Error()))
+		ctx.JSON(400, entity.ErrorResponse{
+			Code:    config.ErrorBadRequest,
+			Message: "Invalid fromDate format, expected YYYY-MM-DD",
+		})
+		return
+	}
+	toDate, err := time.Parse("2006-01-02", ctx.Query("toDate"))
+	if err != nil {
+		slog.Error("GetAudioTranscriptStats error", slog.String("error", err.Error()))
+		ctx.JSON(400, entity.ErrorResponse{
+			Code:    config.ErrorBadRequest,
+			Message: "Invalid toDate format, expected YYYY-MM-DD",
+		})
+		return
+	}
+	
+	res, err := h.UseCase.AudioSegmentRepo.GetAudioTranscriptStats(ctx, fromDate, toDate)
 	if h.HandleDbError(ctx, err, "Error getting audio transcript stats") {
-		slog.Error("GetDailyAudioTranscriptStats error", slog.String("error", err.Error()))
+		slog.Error("GetAudioTranscriptStats error", slog.String("error", err.Error()))
 		return
 	}
 

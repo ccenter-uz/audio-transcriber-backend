@@ -116,7 +116,7 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 		router.GET("/dashboard/user/:user_id", middleware.NewAuth(enforcer), handlerV1.GetUserTranscriptStatictics)
 		router.GET("/dataset_viewer", middleware.NewAuth(enforcer), handlerV1.DatasetViewer)
 		router.GET("/statistic", middleware.NewAuth(enforcer), handlerV1.GetStatistic)
-		router.GET("/dashboard/stats", middleware.NewAuth(enforcer), handlerV1.GetDailyAudioTranscriptStats)
+		router.GET("/dashboard/stats", middleware.NewAuth(enforcer), handlerV1.GetAudioTranscriptStats)
 
 		// audio
 		router.POST("/upload-zip-audio", middleware.NewAuth(enforcer), handlerV1.UploadZipAndExtractAudio)
