@@ -327,6 +327,7 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 		statusCondition = "t.status = 'invalid'"
 	}
 	baseQuery += fmt.Sprintf(" AND %s", statusCondition)
+	
 
 	if len(conditions) > 0 {
 		baseQuery += " AND " + strings.Join(conditions, " AND ")
@@ -581,20 +582,45 @@ func (r *AudioSegmentRepo) GetStatistics(ctx context.Context) (*entity.Statistic
 // 	return &res, nil
 // }
 
-func (r *AudioSegmentRepo) GetAudioTranscriptStats(ctx context.Context, fromDate, toDate time.Time) (*entity.TranscriptStatictics, error) {
 
-	query := `SELECT * FROM get_total_audio_transcript_stats_by_range($1, $2)`
 
-	res := entity.TranscriptStatictics{}
-	err := r.pg.Pool.QueryRow(ctx, query, fromDate, toDate).Scan(
-		&res.DoneChunks,
-		&res.InvalidChunks,
-		&res.DoneAudioFiles,
-		&res.ErrorAudioFiles,
-	)
+
+func (r *AudioSegmentRepo) GetAudioTranscriptStats(ctx context.Context, fromDate, toDate time.Time) (*[]entity.TranscriptStatictics, error) {
+
+	query := `SELECT * FROM get_audio_transcript_stats_by_range($1, $2)`
+
+	resp := []entity.TranscriptStatictics{}
+
+	rows, err := r.pg.Pool.Query(ctx, query, fromDate, toDate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to scan total transcript stats: %w", err)
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no daily audio transcript stats found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to get daily audio transcript stats: %w", err)
 	}
 
-	return &res, nil
+	for rows.Next() {
+		var stateDate time.Time
+		var res entity.TranscriptStatictics
+		err := rows.Scan(
+			&stateDate,
+			&res.DoneChunks,
+			&res.DoneAudioFiles,
+			&res.InvalidChunks,
+			&res.ErrorAudioFiles,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan  audio transcript stats: %w", err)
+		}
+		createdAt := stateDate.In(time.UTC)
+		res.StateDate = createdAt.Format("2006-01-02")
+
+		resp = append(resp, res)
+	}
+	
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan transcript statistics: %w", err)
+	}
+
+	return &resp, nil
 }
