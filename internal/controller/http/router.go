@@ -10,7 +10,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
@@ -42,12 +41,12 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useCase *usecase.UseCase, minioClient *minio.MinIO, rdb *redis.Client) {
+func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useCase *usecase.UseCase, minioClient *minio.MinIO) {
 	// Options
 	engine.Use(gin.Logger())
 	//engine.Use(gin.Recovery())
 
-	handlerV1 := handler.NewHandler(l, config, useCase, *minioClient, rdb)
+	handlerV1 := handler.NewHandler(l, config, useCase, *minioClient)
 
 	// Initialize Casbin enforcer
 

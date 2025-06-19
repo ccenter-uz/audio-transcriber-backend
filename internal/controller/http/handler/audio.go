@@ -15,10 +15,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
 	"github.com/mirjalilova/voice_transcribe/config"
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
-	"github.com/mirjalilova/voice_transcribe/pkg/redis"
 )
 
 // UploadZipAndExtractAudio godoc
@@ -267,32 +265,32 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 // @Failure 500 {object} entity.ErrorResponse
 func (h *Handler) GetAudioFile(ctx *gin.Context) {
 
-	var user_id string
-	claims, exists := ctx.Get("claims")
-	if !exists {
-		slog.Error("error", "Unauthorized")
-		ctx.JSON(401, entity.ErrorResponse{
-			Code:    config.ErrorUnauthorized,
-			Message: "Unauthorizedd",
-		})
-		return
-	} else {
-		user_id = claims.(jwt.MapClaims)["id"].(string)
-	}
+	// var user_id string
+	// claims, exists := ctx.Get("claims")
+	// if !exists {
+	// 	slog.Error("error", "Unauthorized")
+	// 	ctx.JSON(401, entity.ErrorResponse{
+	// 		Code:    config.ErrorUnauthorized,
+	// 		Message: "Unauthorizedd",
+	// 	})
+	// 	return
+	// } else {
+	// 	user_id = claims.(jwt.MapClaims)["id"].(string)
+	// }
 
-	allowed, err := redis.IsRequestAllowed(ctx, h.Redis, user_id, 5, 10, 60)
+	// allowed, err := redis.IsRequestAllowed(ctx, h.Redis, user_id, 5, 10, 60)
 
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
-		slog.Error("Error checking rate limit", slog.String("error", err.Error()))
-		return
-	}
+	// if err != nil {
+	// 	ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+	// 	slog.Error("Error checking rate limit", slog.String("error", err.Error()))
+	// 	return
+	// }
 
-	if !allowed {
-		ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests. Try again later."})
-		slog.Warn("Rate limit exceeded for user", slog.String("user_id", user_id))
-		return
-	}
+	// if !allowed {
+	// 	ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests. Try again later."})
+	// 	slog.Warn("Rate limit exceeded for user", slog.String("user_id", user_id))
+	// 	return
+	// }
 
 	id := ctx.Param("id")
 	intId, err := strconv.Atoi(id)

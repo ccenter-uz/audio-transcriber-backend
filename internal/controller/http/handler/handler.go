@@ -5,7 +5,6 @@ import (
 	"github.com/mirjalilova/voice_transcribe/internal/usecase"
 	"github.com/mirjalilova/voice_transcribe/pkg/logger"
 	"github.com/mirjalilova/voice_transcribe/pkg/minio"
-	"github.com/redis/go-redis/v9"
 )
 
 type Handler struct {
@@ -13,15 +12,15 @@ type Handler struct {
 	Config  *config.Config
 	UseCase *usecase.UseCase
 	MinIO   *minio.MinIO
-	Redis   *redis.Client
+	// Redis   *redis.Client
 }
 
-func NewHandler(l *logger.Logger, c *config.Config, useCase *usecase.UseCase, mn minio.MinIO, rdb *redis.Client) *Handler {
+func NewHandler(l *logger.Logger, c *config.Config, useCase *usecase.UseCase, mn minio.MinIO) *Handler {
 	return &Handler{
 		Logger:  l,
 		Config:  c,
 		UseCase: useCase,
 		MinIO:   &mn,
-		Redis:   rdb,
+		// Redis:   rdb,
 	}
 }

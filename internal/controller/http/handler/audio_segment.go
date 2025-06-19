@@ -10,7 +10,6 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/mirjalilova/voice_transcribe/config"
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
-	"github.com/mirjalilova/voice_transcribe/pkg/redis"
 )
 
 // GetAudioSegment godoc
@@ -26,32 +25,32 @@ import (
 // @Failure 400 {object} entity.ErrorResponse
 func (h *Handler) GetAudioSegment(ctx *gin.Context) {
 
-	var user_id string
-	claims, exists := ctx.Get("claims")
-	if !exists {
-		slog.Error("error", "Unauthorized")
-		ctx.JSON(401, entity.ErrorResponse{
-			Code:    config.ErrorUnauthorized,
-			Message: "Unauthorizedd",
-		})
-		return
-	} else {
-		user_id = claims.(jwt.MapClaims)["id"].(string)
-	}
+	// var user_id string
+	// claims, exists := ctx.Get("claims")
+	// if !exists {
+	// 	slog.Error("error", "Unauthorized")
+	// 	ctx.JSON(401, entity.ErrorResponse{
+	// 		Code:    config.ErrorUnauthorized,
+	// 		Message: "Unauthorizedd",
+	// 	})
+	// 	return
+	// } else {
+	// 	user_id = claims.(jwt.MapClaims)["id"].(string)
+	// }
 
-	allowed, err := redis.IsRequestAllowed(ctx, h.Redis, user_id, 5, 10, 60)
+	// allowed, err := redis.IsRequestAllowed(ctx, h.Redis, user_id, 5, 10, 60)
 
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
-		slog.Error("Error checking rate limit", slog.String("error", err.Error()))
-		return
-	}
+	// if err != nil {
+	// 	ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+	// 	slog.Error("Error checking rate limit", slog.String("error", err.Error()))
+	// 	return
+	// }
 
-	if !allowed {
-		ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests. Try again later."})
-		slog.Warn("Rate limit exceeded for user", slog.String("user_id", user_id))
-		return
-	}
+	// if !allowed {
+	// 	ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests. Try again later."})
+	// 	slog.Warn("Rate limit exceeded for user", slog.String("user_id", user_id))
+	// 	return
+	// }
 
 	id := ctx.Query("id")
 	intId, err := strconv.Atoi(id)
@@ -106,19 +105,19 @@ func (h *Handler) GetAudioSegments(ctx *gin.Context) {
 		user_id = claims.(jwt.MapClaims)["id"].(string)
 	}
 
-	allowed, err := redis.IsRequestAllowed(ctx, h.Redis, user_id, 5, 10, 60)
+	// allowed, err := redis.IsRequestAllowed(ctx, h.Redis, user_id, 5, 10, 60)
 
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
-		slog.Error("Error checking rate limit", slog.String("error", err.Error()))
-		return
-	}
+	// if err != nil {
+	// 	ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+	// 	slog.Error("Error checking rate limit", slog.String("error", err.Error()))
+	// 	return
+	// }
 
-	if !allowed {
-		ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests. Try again later."})
-		slog.Warn("Rate limit exceeded for user", slog.String("user_id", user_id))
-		return
-	}
+	// if !allowed {
+	// 	ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests. Try again later."})
+	// 	slog.Warn("Rate limit exceeded for user", slog.String("user_id", user_id))
+	// 	return
+	// }
 
 	// Assign other filters
 	req.AudioId = ctx.Query("audio_id")
@@ -257,32 +256,32 @@ func (h *Handler) GetUserTranscriptStatictics(ctx *gin.Context) {
 func (h *Handler) DatasetViewer(ctx *gin.Context) {
 	var req entity.Filter
 
-	var userid string
-	claims, exists := ctx.Get("claims")
-	if !exists {
-		slog.Error("error", "Unauthorized")
-		ctx.JSON(401, entity.ErrorResponse{
-			Code:    config.ErrorUnauthorized,
-			Message: "Unauthorizedd",
-		})
-		return
-	} else {
-		userid = claims.(jwt.MapClaims)["id"].(string)
-	}
+	// var userid string
+	// claims, exists := ctx.Get("claims")
+	// if !exists {
+	// 	slog.Error("error", "Unauthorized")
+	// 	ctx.JSON(401, entity.ErrorResponse{
+	// 		Code:    config.ErrorUnauthorized,
+	// 		Message: "Unauthorizedd",
+	// 	})
+	// 	return
+	// } else {
+	// 	userid = claims.(jwt.MapClaims)["id"].(string)
+	// }
 
-	allowed, err := redis.IsRequestAllowed(ctx, h.Redis, userid, 5, 10, 60)
+	// allowed, err := redis.IsRequestAllowed(ctx, h.Redis, userid, 5, 10, 60)
 
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
-		slog.Error("Error checking rate limit", slog.String("error", err.Error()))
-		return
-	}
+	// if err != nil {
+	// 	ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Server error"})
+	// 	slog.Error("Error checking rate limit", slog.String("error", err.Error()))
+	// 	return
+	// }
 
-	if !allowed {
-		ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests. Try again later."})
-		slog.Warn("Rate limit exceeded for user", slog.String("user_id", userid))
-		return
-	}
+	// if !allowed {
+	// 	ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests. Try again later."})
+	// 	slog.Warn("Rate limit exceeded for user", slog.String("user_id", userid))
+	// 	return
+	// }
 
 	// Parse optional pagination parameters
 	pageStr := ctx.Query("offset")
@@ -383,7 +382,7 @@ func (h *Handler) GetAudioTranscriptStats(ctx *gin.Context) {
 		})
 		return
 	}
-	
+
 	res, err := h.UseCase.AudioSegmentRepo.GetAudioTranscriptStats(ctx, fromDate, toDate)
 	if h.HandleDbError(ctx, err, "Error getting audio transcript stats") {
 		slog.Error("GetAudioTranscriptStats error", slog.String("error", err.Error()))
