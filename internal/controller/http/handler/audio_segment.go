@@ -392,3 +392,39 @@ func (h *Handler) GetAudioTranscriptStats(ctx *gin.Context) {
 	// Return response
 	ctx.JSON(http.StatusOK, res)
 }
+
+// GetHourlyTranscripts godoc
+// @Router /api/v1/dashboard/hours [get]
+// @Summary Get hourly transcripts
+// @Description Get hourly transcripts
+// @Security BearerAuth
+// @Tags dashboard
+// @Accept  json
+// @Produce  json
+// @Param userId query string false "User ID"
+// @Param date query string true "Date in YYYY-MM-DD format"
+// @Success 200 {object} entity.ListDailyTranscriptResponse
+// @Failure 400 {object} entity.ErrorResponse
+func (h *Handler) GetHourlyTranscripts(ctx *gin.Context) {
+	userId := ctx.Query("userId")
+	dateStr := ctx.Query("date")
+
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		slog.Error("GetHourlyTranscripts error", slog.String("error", err.Error()))
+		ctx.JSON(400, entity.ErrorResponse{
+			Code:    config.ErrorBadRequest,
+			Message: "Invalid date format, expected YYYY-MM-DD",
+		})
+		return
+	}
+
+	res, err := h.UseCase.AudioSegmentRepo.GetHourlyTranscripts(ctx, userId, date)
+	if h.HandleDbError(ctx, err, "Error getting hourly transcripts") {
+		slog.Error("GetHourlyTranscripts error", slog.String("error", err.Error()))
+		return
+	}
+
+	// Return response
+	ctx.JSON(http.StatusOK, res)
+}

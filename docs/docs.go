@@ -315,6 +315,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dashboard/hours": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get hourly transcripts",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dashboard"
+                ],
+                "summary": "Get hourly transcripts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Date in YYYY-MM-DD format",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ListDailyTranscriptResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dashboard/stats": {
             "get": {
                 "security": [
@@ -612,6 +661,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/transcript/start": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Start a transcript",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transcript"
+                ],
+                "summary": "Start a transcript",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Chunk ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entity.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/entity.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/transcript/update": {
             "put": {
                 "security": [
@@ -868,6 +960,37 @@ const docTemplate = `{
                 }
             }
         },
+        "entity.DailyTranscript": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "hour_range": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.DailyTranscriptResponse": {
+            "type": "object",
+            "properties": {
+                "daily_transcripts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.DailyTranscript"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "entity.DatasetViewerList": {
             "type": "object",
             "properties": {
@@ -884,6 +1007,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "duration": {
+                    "type": "number"
+                },
+                "minutes_spent": {
                     "type": "number"
                 },
                 "next_text": {
@@ -931,6 +1057,17 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "entity.ListDailyTranscriptResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.DailyTranscriptResponse"
+                    }
                 }
             }
         },
@@ -1074,6 +1211,9 @@ const docTemplate = `{
                 },
                 "invalid_chunks": {
                     "type": "integer"
+                },
+                "state_date": {
+                    "type": "string"
                 }
             }
         },

@@ -54,6 +54,7 @@ CREATE TABLE transcripts (
     transcribe_text TEXT,
     report_text TEXT,
     status transcript_status NOT NULL DEFAULT 'ready',
+    viewed_at TIMESTAMP DEFAULT '2025-05-01 00:00:00',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     deleted_at BIGINT NOT NULL DEFAULT 0,
@@ -152,8 +153,9 @@ CREATE OR REPLACE FUNCTION update_audio_file_status_from_transcripts()
 RETURNS TRIGGER AS $$
 DECLARE
     segment_audio_id INT;
-    ready_count INT;
+    done_count INT;
     invalid_count INT;
+    total_count INT;
 BEGIN
     SELECT afs.audio_id INTO segment_audio_id
     FROM audio_file_segments afs
@@ -163,12 +165,9 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    SELECT COUNT(*) INTO ready_count
-    FROM transcripts t
-    JOIN audio_file_segments afs ON afs.id = t.segment_id
-    WHERE afs.audio_id = segment_audio_id
-      AND afs.deleted_at = 0
-      AND t.status = 'ready';
+    SELECT COUNT(*) INTO total_count
+    FROM audio_file_segments
+    WHERE audio_id = segment_audio_id AND deleted_at = 0;
 
     SELECT COUNT(*) INTO invalid_count
     FROM transcripts t
@@ -177,12 +176,19 @@ BEGIN
       AND afs.deleted_at = 0
       AND t.status = 'invalid';
 
-    IF invalid_count > 0 THEN
+    SELECT COUNT(*) INTO done_count
+    FROM transcripts t
+    JOIN audio_file_segments afs ON afs.id = t.segment_id
+    WHERE afs.audio_id = segment_audio_id
+      AND afs.deleted_at = 0
+      AND t.status = 'done';
+
+    IF invalid_count = total_count THEN
         UPDATE audio_files
         SET status = 'error',
             updated_at = NOW()
         WHERE id = segment_audio_id;
-    ELSIF ready_count = 0 THEN
+    ELSIF done_count = total_count THEN
         UPDATE audio_files
         SET status = 'done',
             updated_at = NOW()
@@ -198,7 +204,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
 CREATE TRIGGER trg_update_audio_status
 AFTER INSERT OR UPDATE ON transcripts
 FOR EACH ROW
 EXECUTE FUNCTION update_audio_file_status_from_transcripts();
+
+
+
+
+CREATE OR REPLACE FUNCTION get_hourly_transcripts(p_user_id UUID, p_date DATE)
+RETURNS TABLE(hour_range TEXT, chunk_count BIGINT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        TO_CHAR(date_trunc('hour', t.updated_at), 'HH24:MI') || '-' || 
+        TO_CHAR(date_trunc('hour', t.updated_at) + INTERVAL '1 hour', 'HH24:MI') AS hour_range,
+        COUNT(*) AS chunk_count
+    FROM transcripts t
+    WHERE t.user_id = p_user_id
+      AND t.deleted_at = 0
+      AND DATE(t.updated_at) = p_date
+    GROUP BY date_trunc('hour', t.updated_at)
+    HAVING COUNT(*) > 0
+    ORDER BY date_trunc('hour', t.updated_at);
+END;
+$$ LANGUAGE plpgsql;

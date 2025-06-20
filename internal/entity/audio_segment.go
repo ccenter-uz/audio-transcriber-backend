@@ -60,18 +60,19 @@ type TranscriptStatictics struct {
 }
 
 type DatasetViewerList struct {
-	AudioID       int     `json:"audio_id"`
-	AudioUrl      string  `json:"audio_url"`
-	ChunkID       int     `json:"chunk_id"`
-	ChunkUrl      string  `json:"chunk_url"`
-	Duration      float32 `json:"duration"`
-	PreviouText   *string `json:"previous_text"`
-	ChunkText     *string `json:"text"`
-	NextText      *string `json:"next_text"`
-	Sentence      *string `json:"sentence"`
-	ReportText    *string `json:"report_text"`
-	Transcriber   *string `json:"transcriber"`
-	TranscriberID *string `json:"transcriber_id"`
+	AudioID       int      `json:"audio_id"`
+	AudioUrl      string   `json:"audio_url"`
+	ChunkID       int      `json:"chunk_id"`
+	ChunkUrl      string   `json:"chunk_url"`
+	Duration      float32  `json:"duration"`
+	PreviouText   *string  `json:"previous_text"`
+	ChunkText     *string  `json:"text"`
+	NextText      *string  `json:"next_text"`
+	Sentence      *string  `json:"sentence"`
+	ReportText    *string  `json:"report_text"`
+	Transcriber   *string  `json:"transcriber"`
+	TranscriberID *string  `json:"transcriber_id"`
+	MinutesSpent  *float32 `json:"minutes_spent"`
 }
 
 type DatasetViewerListResponse struct {
@@ -85,4 +86,20 @@ type Statistics struct {
 	PreviouText map[string]int `json:"previous_text"`
 	NextText    map[string]int `json:"next_text"`
 	Transcriber map[string]int `json:"transcriber"`
+}
+
+type DailyTranscript struct {
+	HourRange string `json:"hour_range"`
+	Count     int    `json:"count"`
+}
+
+type DailyTranscriptResponse struct {
+	UserId           string            `json:"user_id"`
+	Username         string            `json:"username"`
+	DailyTranscripts []DailyTranscript `json:"daily_transcripts"`
+	TotalCount       int               `json:"total_count"`
+}
+
+type ListDailyTranscriptResponse struct {
+	Data []DailyTranscriptResponse `json:"data"`
 }

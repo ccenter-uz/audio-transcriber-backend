@@ -234,3 +234,42 @@ func (h *Handler) DeleteTranscript(ctx *gin.Context) {
 		Message: "Transcript deleted successfully",
 	})
 }
+
+// StartTranscripts godoc
+// @Router /api/v1/transcript/start [put]
+// @Summary Start a transcript
+// @Description Start a transcript
+// @Security BearerAuth
+// @Tags transcript
+// @Accept  json
+// @Produce  json
+// @Param id query int true "Chunk ID"
+// @Success 200 {object} entity.SuccessResponse
+// @Failure 400 {object} entity.ErrorResponse
+func (h *Handler) StartTranscripts(ctx *gin.Context) {
+
+	id := ctx.Query("id")
+	intId, err := strconv.Atoi(id)
+	if err != nil {
+		slog.Error("UpdateTranscript error", slog.String("error", err.Error()))
+		ctx.JSON(400, entity.ErrorResponse{
+			Code:    config.ErrorBadRequest,
+			Message: "Invalid ustranscripter ID",
+		})
+	}
+
+	err = h.UseCase.TranscriptRepo.StartTranscripts(ctx, intId)
+	if err != nil {
+		slog.Error("StartTranscripts error", slog.String("error", err.Error()))
+		ctx.JSON(400, entity.ErrorResponse{
+			Code:    config.ErrorBadRequest,
+			Message: "Error updating transcript viewed at",
+		})
+		return
+	}
+
+	slog.Info("Transcript started successfully")
+	ctx.JSON(200, gin.H{
+		"message": "Transcript started successfully",
+	})
+}

@@ -104,6 +104,7 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 		router.PUT("/transcript/update", middleware.NewAuth(enforcer), handlerV1.UpdateTranscript)
 		// router.PUT("/transcript/update/status", handlerV1.UpdateStatus)
 		router.DELETE("/transcript/delete", middleware.NewAuth(enforcer), handlerV1.DeleteTranscript)
+		router.PUT("/transcript/start", middleware.NewAuth(enforcer), handlerV1.StartTranscripts)
 
 		// audio_segment
 		router.GET("/audio_segment", middleware.NewAuth(enforcer), handlerV1.GetAudioSegments)
@@ -116,6 +117,7 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 		router.GET("/dataset_viewer", middleware.NewAuth(enforcer), handlerV1.DatasetViewer)
 		router.GET("/statistic", middleware.NewAuth(enforcer), handlerV1.GetStatistic)
 		router.GET("/dashboard/stats", middleware.NewAuth(enforcer), handlerV1.GetAudioTranscriptStats)
+		router.GET("/dashboard/hours", middleware.NewAuth(enforcer), handlerV1.GetHourlyTranscripts)
 
 		// audio
 		router.POST("/upload-zip-audio", middleware.NewAuth(enforcer), handlerV1.UploadZipAndExtractAudio)

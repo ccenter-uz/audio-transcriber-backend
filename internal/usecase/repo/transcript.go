@@ -106,13 +106,13 @@ func (r *TranscriptRepo) Update(ctx context.Context, req *entity.UpdateTranscrip
 					WHERE segment_id IN (SELECT id FROM segments_of_audio)
 				`
 
-				_, err := tr.Exec(ctx, query1, req.Id)
-				if err != nil {
-					tr.Rollback(ctx)
-					return fmt.Errorf("failed to update transcript status: %w", err)
-				}
+			_, err := tr.Exec(ctx, query1, req.Id)
+			if err != nil {
+				tr.Rollback(ctx)
+				return fmt.Errorf("failed to update transcript status: %w", err)
+			}
 
-				query2 := `
+			query2 := `
 					UPDATE audio_files
 					SET status = 'error',
 						updated_at = NOW()
@@ -123,11 +123,11 @@ func (r *TranscriptRepo) Update(ctx context.Context, req *entity.UpdateTranscrip
 					)
 				`
 
-				_, err = tr.Exec(ctx, query2, req.Id)
-				if err != nil {
-					tr.Rollback(ctx)
-					return fmt.Errorf("failed to update audio file status: %w", err)
-				}
+			_, err = tr.Exec(ctx, query2, req.Id)
+			if err != nil {
+				tr.Rollback(ctx)
+				return fmt.Errorf("failed to update audio file status: %w", err)
+			}
 		}
 
 		query = `UPDATE transcripts SET status = 'invalid', updated_at = now() WHERE segment_id = $1 AND deleted_at = 0`
@@ -168,6 +168,10 @@ func (r *TranscriptRepo) Update(ctx context.Context, req *entity.UpdateTranscrip
 func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcript, error) {
 	var createdAt time.Time
 
+	tr, err := r.pg.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
 	query := `
 	SELECT
 		t.id,
@@ -188,7 +192,7 @@ func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcrip
 	WHERE t.segment_id = $1 AND t.deleted_at = 0 AND s.deleted_at = 0
 	`
 	transcript := &entity.Transcript{}
-	err := r.pg.Pool.QueryRow(ctx, query, id).Scan(
+	err = tr.QueryRow(ctx, query, id).Scan(
 		&transcript.Id,
 		&transcript.AudioId,
 		&transcript.AudioName,
@@ -201,10 +205,16 @@ func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcrip
 		&transcript.Status,
 		&createdAt)
 	if err != nil {
+		tr.Rollback(ctx)
 		return nil, fmt.Errorf("failed to get transcripts: %w", err)
 	}
 
 	transcript.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
+
+	err = tr.Commit(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
 
 	return transcript, nil
 }
@@ -306,4 +316,18 @@ func (r *TranscriptRepo) GetList(ctx context.Context, req *entity.GetTranscriptR
 	}
 
 	return &transcripts, nil
+}
+
+func (r *TranscriptRepo) StartTranscripts(ctx context.Context, id int) error {
+	query := `
+	UPDATE transcripts
+	SET viewed_at = now(), updated_at = now()
+	WHERE segment_id = $1 AND deleted_at = 0
+	`
+	_, err := r.pg.Pool.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to update transcript viewed at: %w", err)
+	}
+
+	return nil
 }

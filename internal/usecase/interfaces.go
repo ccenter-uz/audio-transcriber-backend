@@ -29,6 +29,7 @@ type (
 		Update(ctx context.Context, req *entity.UpdateTranscript) error
 		// UpdateStatus(ctx context.Context, id *int, user_id string) error
 		Delete(ctx context.Context, id int) error
+		StartTranscripts(ctx context.Context, id int) error
 	}
 
 	// AudioSegmentRepo -.
@@ -42,6 +43,7 @@ type (
 		DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report bool) (*entity.DatasetViewerListResponse, error)
 		GetStatistics(ctx context.Context) (*entity.Statistics, error)
 		GetAudioTranscriptStats(ctx context.Context, fromDate, toDate time.Time) (*[]entity.TranscriptStatictics, error)
+		GetHourlyTranscripts(ctx context.Context, userId string, date time.Time) (*entity.ListDailyTranscriptResponse, error)
 	}
 
 	// AudioFileRepo -.

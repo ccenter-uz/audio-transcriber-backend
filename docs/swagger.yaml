@@ -35,6 +35,26 @@ definitions:
       count:
         type: integer
     type: object
+  entity.DailyTranscript:
+    properties:
+      count:
+        type: integer
+      hour_range:
+        type: string
+    type: object
+  entity.DailyTranscriptResponse:
+    properties:
+      daily_transcripts:
+        items:
+          $ref: '#/definitions/entity.DailyTranscript'
+        type: array
+      total_count:
+        type: integer
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
   entity.DatasetViewerList:
     properties:
       audio_id:
@@ -46,6 +66,8 @@ definitions:
       chunk_url:
         type: string
       duration:
+        type: number
+      minutes_spent:
         type: number
       next_text:
         type: string
@@ -77,6 +99,13 @@ definitions:
         type: string
       message:
         type: string
+    type: object
+  entity.ListDailyTranscriptResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/entity.DailyTranscriptResponse'
+        type: array
     type: object
   entity.LoginReq:
     properties:
@@ -170,6 +199,8 @@ definitions:
         type: integer
       invalid_chunks:
         type: integer
+      state_date:
+        type: string
     type: object
   entity.UpdateTranscriptBody:
     properties:
@@ -435,6 +466,37 @@ paths:
       summary: Get a list of audio percent
       tags:
       - dashboard
+  /api/v1/dashboard/hours:
+    get:
+      consumes:
+      - application/json
+      description: Get hourly transcripts
+      parameters:
+      - description: User ID
+        in: query
+        name: userId
+        type: string
+      - description: Date in YYYY-MM-DD format
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.ListDailyTranscriptResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get hourly transcripts
+      tags:
+      - dashboard
   /api/v1/dashboard/stats:
     get:
       consumes:
@@ -647,6 +709,33 @@ paths:
       security:
       - BearerAuth: []
       summary: Get a list of transcripts
+      tags:
+      - transcript
+  /api/v1/transcript/start:
+    put:
+      consumes:
+      - application/json
+      description: Start a transcript
+      parameters:
+      - description: Chunk ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/entity.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Start a transcript
       tags:
       - transcript
   /api/v1/transcript/update:

@@ -327,7 +327,6 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 		statusCondition = "t.status = 'invalid'"
 	}
 	baseQuery += fmt.Sprintf(" AND %s", statusCondition)
-	
 
 	if len(conditions) > 0 {
 		baseQuery += " AND " + strings.Join(conditions, " AND ")
@@ -353,7 +352,8 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			aggregated_segments.all_transcripts,
 			t.report_text,
 			u.username,
-			u.id
+			u.id,
+			EXTRACT(EPOCH FROM t.updated_at - t.viewed_at) / 60 AS minutes_spent
 	` + baseQuery + `
 		ORDER BY af.id, afs.id
 		LIMIT $` + fmt.Sprint(argIdx) + ` OFFSET $` + fmt.Sprint(argIdx+1)
@@ -381,6 +381,7 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			&reps.ReportText,
 			&reps.Transcriber,
 			&reps.TranscriberID,
+			&reps.MinutesSpent,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan dataset viewer: %w", err)
@@ -582,9 +583,6 @@ func (r *AudioSegmentRepo) GetStatistics(ctx context.Context) (*entity.Statistic
 // 	return &res, nil
 // }
 
-
-
-
 func (r *AudioSegmentRepo) GetAudioTranscriptStats(ctx context.Context, fromDate, toDate time.Time) (*[]entity.TranscriptStatictics, error) {
 
 	query := `SELECT * FROM get_audio_transcript_stats_by_range($1, $2)`
@@ -617,9 +615,56 @@ func (r *AudioSegmentRepo) GetAudioTranscriptStats(ctx context.Context, fromDate
 
 		resp = append(resp, res)
 	}
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan transcript statistics: %w", err)
+	}
+
+	return &resp, nil
+}
+
+func (r *AudioSegmentRepo) GetHourlyTranscripts(ctx context.Context, userId string, date time.Time) (*entity.ListDailyTranscriptResponse, error) {
+	query := `SELECT * FROM get_hourly_transcripts($1, $2);`
+
+	rows, err := r.pg.Pool.Query(ctx, query, userId, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	resp := entity.ListDailyTranscriptResponse{}
+	userMap := make(map[string]*entity.DailyTranscriptResponse)
+
+	for rows.Next() {
+		var (
+			userID     string
+			username   string
+			hourRange  string
+			chunkCount int
+			total      int
+		)
+
+		if err := rows.Scan(&userID, &username, &hourRange, &chunkCount, &total); err != nil {
+			return nil, err
+		}
+
+		if _, ok := userMap[userID]; !ok {
+			userMap[userID] = &entity.DailyTranscriptResponse{
+				UserId:           userID,
+				Username:         username,
+				DailyTranscripts: []entity.DailyTranscript{},
+				TotalCount:       total,
+			}
+		}
+
+		userMap[userID].DailyTranscripts = append(userMap[userID].DailyTranscripts, entity.DailyTranscript{
+			HourRange: hourRange,
+			Count:     chunkCount,
+		})
+	}
+
+	for _, v := range userMap {
+		resp.Data = append(resp.Data, *v)
 	}
 
 	return &resp, nil
