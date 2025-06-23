@@ -801,6 +801,11 @@ const docTemplate = `{
         },
         "/api/v1/upload-zip-audio": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Upload Zip file",
                 "consumes": [
                     "multipart/form-data"

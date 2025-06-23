@@ -156,6 +156,7 @@ DECLARE
     done_count INT;
     invalid_count INT;
     total_count INT;
+    ready_count INT;
 BEGIN
     SELECT afs.audio_id INTO segment_audio_id
     FROM audio_file_segments afs
@@ -176,6 +177,13 @@ BEGIN
       AND afs.deleted_at = 0
       AND t.status = 'invalid';
 
+    SELECT COUNT(*) INTO ready_count
+    FROM transcripts t
+    JOIN audio_file_segments afs ON afs.id = t.segment_id
+    WHERE afs.audio_id = segment_audio_id
+      AND afs.deleted_at = 0
+      AND t.status = 'ready';
+      
     SELECT COUNT(*) INTO done_count
     FROM transcripts t
     JOIN audio_file_segments afs ON afs.id = t.segment_id
@@ -188,9 +196,14 @@ BEGIN
         SET status = 'error',
             updated_at = NOW()
         WHERE id = segment_audio_id;
-    ELSIF done_count = total_count THEN
+    ELSIF done_count + invalid_count = total_count THEN
         UPDATE audio_files
         SET status = 'done',
+            updated_at = NOW()
+        WHERE id = segment_audio_id;
+    ELSIF ready_count = total_count THEN
+        UPDATE audio_files
+        SET status = 'pending',
             updated_at = NOW()
         WHERE id = segment_audio_id;
     ELSE
@@ -213,20 +226,3 @@ EXECUTE FUNCTION update_audio_file_status_from_transcripts();
 
 
 
-CREATE OR REPLACE FUNCTION get_hourly_transcripts(p_user_id UUID, p_date DATE)
-RETURNS TABLE(hour_range TEXT, chunk_count BIGINT) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        TO_CHAR(date_trunc('hour', t.updated_at), 'HH24:MI') || '-' || 
-        TO_CHAR(date_trunc('hour', t.updated_at) + INTERVAL '1 hour', 'HH24:MI') AS hour_range,
-        COUNT(*) AS chunk_count
-    FROM transcripts t
-    WHERE t.user_id = p_user_id
-      AND t.deleted_at = 0
-      AND DATE(t.updated_at) = p_date
-    GROUP BY date_trunc('hour', t.updated_at)
-    HAVING COUNT(*) > 0
-    ORDER BY date_trunc('hour', t.updated_at);
-END;
-$$ LANGUAGE plpgsql;

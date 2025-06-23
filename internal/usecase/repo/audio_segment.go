@@ -36,11 +36,11 @@ func (r *AudioSegmentRepo) Create(ctx context.Context, req *entity.CreateAudioSe
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	// defer func() {
-	// 	if err := tr.Rollback(ctx); err != nil {
-	// 		// r.logger.Error("failed to rollback transaction: %v", err)
-	// 	}
-	// }()
+	defer func() {
+		if err != nil {
+			_ = tr.Rollback(ctx)
+		}
+	}()
 
 	query := `
 	INSERT INTO audio_file_segments (audio_id, filename, duration)
@@ -49,7 +49,8 @@ func (r *AudioSegmentRepo) Create(ctx context.Context, req *entity.CreateAudioSe
 	`
 
 	var id int
-	_ = tr.QueryRow(ctx, query, req.AudioId, req.FileName, req.Duration).Scan(&id)
+	row := tr.QueryRow(ctx, query, req.AudioId, req.FileName, req.Duration)
+	err = row.Scan(&id)
 	if err != nil {
 		tr.Rollback(ctx)
 		return fmt.Errorf("failed to create audio segment: %w", err)
@@ -138,10 +139,15 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 		args = append(args, req.Status)
 	}
 
+	fmt.Println("req.UserID", req.UserID)
 	if len(conditions) > 0 {
 		query += " AND " + strings.Join(conditions, " AND ")
 	} else if req.UserID != "" {
-		query += " AND a.user_id = $" + strconv.Itoa(len(args)+1) + " AND a.status = 'processing' "
+		query += `		AND s.audio_id = (
+			SELECT id FROM audio_files
+			WHERE status = 'processing' AND deleted_at = 0 AND a.user_id = $` + strconv.Itoa(len(args)+1) + ` ORDER BY created_at ASC
+			LIMIT 1
+		) `
 		args = append(args, req.UserID)
 	} else {
 		query += `
@@ -205,7 +211,7 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 
 	err = r.pg.Pool.QueryRow(ctx, query, audioId).Scan(&userId)
 	if userId == "" {
-		_, err = r.pg.Pool.Exec(ctx, "UPDATE audio_files SET status = 'processing', user_id = $2 WHERE id = $1 AND deleted_at = 0", audioId, req.UIserId)
+		_, err = r.pg.Pool.Exec(ctx, "UPDATE audio_files SET status = 'processing', user_id = $2, updated_at = now() WHERE id = $1 AND deleted_at = 0", audioId, req.UIserId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update file: %w", err)
 		}

@@ -16,13 +16,13 @@ p, transcriber,  /api/v1/dashboard/user/:user_id,  GET
 p, admin,       /api/v1/dashboard,                 GET
 p, admin,       /api/v1/dataset_viewer,            GET
 p, admin,       /api/v1/statistic,                 GET
-p, admin,       /api/v1/dashboard/stats,                 GET
-p, admin,       /api/v1/dashboard/hours,               GET
+p, admin,       /api/v1/dashboard/stats,           GET
+p, admin,       /api/v1/dashboard/hours,           GET
 
 p, admin,       /api/v1/audio_segment/delete,      GET
 p, admin,       /api/v1/transcript/delete,         GET
 
-p, admin,       /api/v1/upload-zip-audio,          GET
+p, admin,       /api/v1/upload-zip-audio,          POST
 p, admin,       /api/v1/audio_file/:id,            GET
 p, admin,       /api/v1/user/list,                 GET
 

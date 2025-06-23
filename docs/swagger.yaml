@@ -802,6 +802,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Upload Zip file
       tags:
       - audio
