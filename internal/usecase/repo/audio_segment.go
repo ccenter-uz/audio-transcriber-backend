@@ -619,6 +619,7 @@ func (r *AudioSegmentRepo) GetAudioTranscriptStats(ctx context.Context, fromDate
 			&res.DoneAudioFiles,
 			&res.InvalidChunks,
 			&res.ErrorAudioFiles,
+			&res.ActiveOperators,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan  audio transcript stats: %w", err)

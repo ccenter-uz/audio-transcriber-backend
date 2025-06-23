@@ -57,6 +57,7 @@ type TranscriptStatictics struct {
 	InvalidChunks   int    `json:"invalid_chunks"`
 	DoneAudioFiles  int    `json:"done_audio_files"`
 	ErrorAudioFiles int    `json:"error_audio_files"`
+	ActiveOperators int    `json:"active_operators"`
 }
 
 type DatasetViewerList struct {

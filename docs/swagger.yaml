@@ -191,6 +191,8 @@ definitions:
     type: object
   entity.TranscriptStatictics:
     properties:
+      active_operators:
+        type: integer
       done_audio_files:
         type: integer
       done_chunks:

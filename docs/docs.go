@@ -1205,6 +1205,9 @@ const docTemplate = `{
         "entity.TranscriptStatictics": {
             "type": "object",
             "properties": {
+                "active_operators": {
+                    "type": "integer"
+                },
                 "done_audio_files": {
                     "type": "integer"
                 },

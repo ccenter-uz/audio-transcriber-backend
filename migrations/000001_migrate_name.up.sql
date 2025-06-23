@@ -233,6 +233,56 @@ EXECUTE FUNCTION update_audio_file_status_from_transcripts();
 
 
 
+CREATE OR REPLACE FUNCTION get_audio_transcript_stats_by_range(
+    from_date date, 
+    to_date date
+)
+RETURNS TABLE(
+    stat_date date, 
+    done_segments integer, 
+    invalid_segments integer, 
+    done_files integer, 
+    error_files integer
+)
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT                                                                                                              
+        days.day::DATE AS stat_date,                                                                                    
+        COALESCE(done_seg.count, 0)::integer AS done_segments,                                                                   
+        COALESCE(invalid_seg.count, 0)::integer AS invalid_segments,                                                             
+        COALESCE(done_af.count, 0)::integer AS done_files,                                                                        
+        COALESCE(error_af.count, 0)::integer AS error_files                                                                      
+    FROM (
+        SELECT generate_series(from_date, to_date, INTERVAL '1 day') AS day
+    ) AS days
+    LEFT JOIN (
+        SELECT updated_at::DATE AS day, COUNT(*) AS count
+        FROM transcripts
+        WHERE status = 'done' AND deleted_at = 0
+        GROUP BY updated_at::DATE
+    ) AS done_seg ON done_seg.day = days.day
+    LEFT JOIN (
+        SELECT updated_at::DATE AS day, COUNT(*) AS count
+        FROM transcripts
+        WHERE status = 'invalid' AND deleted_at = 0
+        GROUP BY updated_at::DATE
+    ) AS invalid_seg ON invalid_seg.day = days.day
+    LEFT JOIN (
+        SELECT updated_at::DATE AS day, COUNT(*) AS count
+        FROM audio_files
+        WHERE status = 'done' AND deleted_at = 0
+        GROUP BY updated_at::DATE
+    ) AS done_af ON done_af.day = days.day
+    LEFT JOIN (
+        SELECT updated_at::DATE AS day, COUNT(*) AS count
+        FROM audio_files
+        WHERE status = 'error' AND deleted_at = 0
+        GROUP BY updated_at::DATE
+    ) AS error_af ON error_af.day = days.day
+    ORDER BY stat_date;
+END;
+$$ LANGUAGE plpgsql;
 
 
 
@@ -240,54 +290,72 @@ EXECUTE FUNCTION update_audio_file_status_from_transcripts();
 
 
 
-
-
-WITH user_daily_stats AS (
+WITH raw_data AS (
   SELECT
     t.user_id,
     DATE(t.updated_at) AS day,
-    COUNT(*) AS done_chunks,
-    SUM(afs.duration) AS total_duration
+    COUNT(*) AS done_chunks
   FROM transcripts t
-  JOIN audio_file_segments afs ON afs.id = t.segment_id
   WHERE t.status = 'done'
     AND t.deleted_at = 0
     AND t.updated_at >= NOW() - INTERVAL '7 days'
   GROUP BY t.user_id, DATE(t.updated_at)
 ),
-user_avg_stats AS (
+avg_chunk_time AS (
+  SELECT 0.27::numeric AS avg_chunk_minute
+),
+kpi_table AS (
   SELECT
-    user_id,
-    AVG(done_chunks) AS avg_daily_chunks,
-    SUM(total_duration) / SUM(done_chunks) AS avg_minutes_per_chunk
-  FROM user_daily_stats
-  GROUP BY user_id
-),
-ranked_users AS (
-  SELECT *,
-    NTILE(4) OVER (ORDER BY avg_daily_chunks) AS quartile
-  FROM user_avg_stats
-),
-middle_users AS (
-  SELECT *
-  FROM ranked_users
-  WHERE quartile IN (2, 3)
-),
-median_calc AS (
-  SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY avg_daily_chunks) AS median_chunks
-  FROM middle_users
-),
-final_selection AS (
-  SELECT mu.*, mc.median_chunks
-  FROM middle_users mu, median_calc mc
+    r.user_id,
+    r.day,
+    r.done_chunks,
+    ROUND(480 / a.avg_chunk_minute) AS expected_kpi,
+    ROUND((r.done_chunks::numeric / (480 / a.avg_chunk_minute)) * 100, 1) AS kpi_percent
+  FROM raw_data r
+  CROSS JOIN avg_chunk_time a
 )
 SELECT
-  user_id,
-  ROUND(avg_daily_chunks::numeric, 2) AS avg_daily_chunks,
-  ROUND(avg_minutes_per_chunk::numeric, 2) AS avg_minutes_per_chunk
-FROM final_selection
-ORDER BY ABS(avg_daily_chunks - median_chunks)
-LIMIT 1;
-
+  u.username,
+  k.day,
+  k.done_chunks,
+  k.expected_kpi,
+  k.kpi_percent
+FROM kpi_table k
+JOIN users u ON u.id = k.user_id
+ORDER BY k.day, u.username;
+voice_transcribe=# WITH raw_data AS (
+  SELECT
+    t.id,
+    t.user_id,
+    a.duration,
+    EXTRACT(EPOCH FROM (t.updated_at - t.viewed_at)) AS spent_seconds
+  FROM transcripts t
+  JOIN audio_file_segments a ON a.id = t.segment_id
+  WHERE t.viewed_at IS NOT NULL
+    AND t.updated_at > t.viewed_at
+    AND t.status = 'done'
+    AND t.deleted_at = 0
+),                                        
+bounds AS (
+  SELECT
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY spent_seconds) AS q1,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY spent_seconds) AS q3
+  FROM raw_data
+),                
+filtered AS (                                       
+  SELECT r.*                                                                            
+  FROM raw_data r
+  JOIN bounds b ON r.spent_seconds BETWEEN (b.q1 - 1.5 * (b.q3 - b.q1)) AND (b.q3 + 1.5 * (b.q3 - b.q1))
+),
+weighted AS (
+  SELECT
+    SUM(spent_seconds * duration) AS weighted_spent_sum,
+    SUM(duration) AS total_weight
+  FROM filtered
+)              
+SELECT
+  ROUND((weighted_spent_sum / total_weight)::numeric, 2) AS weighted_avg_spent_per_chunk_sec,
+  ROUND(((weighted_spent_sum / total_weight) / 60.0)::numeric, 2) AS weighted_avg_spent_per_chunk_min
+FROM weighted;
 
 
