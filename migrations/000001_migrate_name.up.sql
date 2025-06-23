@@ -226,3 +226,68 @@ EXECUTE FUNCTION update_audio_file_status_from_transcripts();
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+WITH user_daily_stats AS (
+  SELECT
+    t.user_id,
+    DATE(t.updated_at) AS day,
+    COUNT(*) AS done_chunks,
+    SUM(afs.duration) AS total_duration
+  FROM transcripts t
+  JOIN audio_file_segments afs ON afs.id = t.segment_id
+  WHERE t.status = 'done'
+    AND t.deleted_at = 0
+    AND t.updated_at >= NOW() - INTERVAL '7 days'
+  GROUP BY t.user_id, DATE(t.updated_at)
+),
+user_avg_stats AS (
+  SELECT
+    user_id,
+    AVG(done_chunks) AS avg_daily_chunks,
+    SUM(total_duration) / SUM(done_chunks) AS avg_minutes_per_chunk
+  FROM user_daily_stats
+  GROUP BY user_id
+),
+ranked_users AS (
+  SELECT *,
+    NTILE(4) OVER (ORDER BY avg_daily_chunks) AS quartile
+  FROM user_avg_stats
+),
+middle_users AS (
+  SELECT *
+  FROM ranked_users
+  WHERE quartile IN (2, 3)
+),
+median_calc AS (
+  SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY avg_daily_chunks) AS median_chunks
+  FROM middle_users
+),
+final_selection AS (
+  SELECT mu.*, mc.median_chunks
+  FROM middle_users mu, median_calc mc
+)
+SELECT
+  user_id,
+  ROUND(avg_daily_chunks::numeric, 2) AS avg_daily_chunks,
+  ROUND(avg_minutes_per_chunk::numeric, 2) AS avg_minutes_per_chunk
+FROM final_selection
+ORDER BY ABS(avg_daily_chunks - median_chunks)
+LIMIT 1;
+
+
+

@@ -107,7 +107,30 @@ func (r *AudioSegmentRepo) GetById(ctx context.Context, id int) (*entity.AudioSe
 }
 
 func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegmentReq) (*entity.AudioSegmentList, error) {
+
+	var audio_id int
 	query := `
+	SELECT id FROM audio_files
+			WHERE status = 'processing' AND deleted_at = 0 AND user_id = $1 ORDER BY created_at ASC
+			LIMIT 1`
+
+	err := r.pg.Pool.QueryRow(ctx, query, req.UserID).Scan(&audio_id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get audio file: %w", err)
+	}
+	if audio_id == 0 {
+		query = `
+		SELECT id FROM audio_files
+			WHERE status = 'pending' AND deleted_at = 0
+			ORDER BY created_at ASC
+			LIMIT 1`
+		err = r.pg.Pool.QueryRow(ctx, query).Scan(&audio_id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get audio file: %w", err)
+		}
+	}
+
+	query = `
 	SELECT 
 		COUNT(s.id) OVER () AS total_count,
 		s.id,
@@ -115,8 +138,7 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 		a.filename,
 		s.filename,
 		t.status,
-		s.created_at,
-		a.id
+		s.created_at
 	FROM 
 		audio_file_segments s
 	JOIN 
@@ -139,26 +161,13 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 		args = append(args, req.Status)
 	}
 
-	fmt.Println("req.UserID", req.UserID)
+	if req.UserID != "" {
+		conditions = append(conditions, "s.audio_id = $"+strconv.Itoa(len(args)+1))
+		args = append(args, audio_id)
+	}
+
 	if len(conditions) > 0 {
 		query += " AND " + strings.Join(conditions, " AND ")
-	} else if req.UserID != "" {
-		query += `		AND s.audio_id = (
-			SELECT id FROM audio_files
-			WHERE status = 'processing' AND deleted_at = 0 AND a.user_id = $` + strconv.Itoa(len(args)+1) + ` ORDER BY created_at ASC
-			LIMIT 1
-		) `
-		args = append(args, req.UserID)
-	} else {
-		query += `
-		AND a.id = (
-			SELECT id FROM audio_files
-			WHERE status = 'pending' AND deleted_at = 0
-			ORDER BY created_at ASC
-			LIMIT 1
-		)
-		AND t.status = 'ready'
-		`
 	}
 
 	query += ` ORDER BY s.id `
@@ -169,7 +178,6 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	}
 	defer rows.Close()
 
-	var audioId int
 	audioSegments := entity.AudioSegmentList{}
 	for rows.Next() {
 		var createdAt time.Time
@@ -184,8 +192,7 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 			&audioName,
 			&transcript.FilePath,
 			&status,
-			&createdAt,
-			&audioId)
+			&createdAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan segment: %w", err)
 		}
@@ -209,9 +216,9 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	query = `SELECT user_id FROM audio_files WHERE id = $1 AND deleted_at = 0`
 	var userId string
 
-	err = r.pg.Pool.QueryRow(ctx, query, audioId).Scan(&userId)
+	err = r.pg.Pool.QueryRow(ctx, query, audio_id).Scan(&userId)
 	if userId == "" {
-		_, err = r.pg.Pool.Exec(ctx, "UPDATE audio_files SET status = 'processing', user_id = $2, updated_at = now() WHERE id = $1 AND deleted_at = 0", audioId, req.UIserId)
+		_, err = r.pg.Pool.Exec(ctx, "UPDATE audio_files SET status = 'processing', user_id = $2, updated_at = now() WHERE id = $1 AND deleted_at = 0", audio_id, req.UserID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update file: %w", err)
 		}
