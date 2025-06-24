@@ -3,12 +3,14 @@ package repo
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/mirjalilova/voice_transcribe/config"
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
 	"github.com/mirjalilova/voice_transcribe/pkg/logger"
@@ -111,22 +113,28 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	var audio_id int
 	query := `
 	SELECT id FROM audio_files
-			WHERE status = 'processing' AND deleted_at = 0 AND user_id = $1 ORDER BY created_at ASC
-			LIMIT 1`
+	WHERE status = 'processing' AND deleted_at = 0 AND user_id = $1
+	ORDER BY created_at ASC
+	LIMIT 1`
 
 	err := r.pg.Pool.QueryRow(ctx, query, req.UserID).Scan(&audio_id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get audio file: %w", err)
-	}
-	if audio_id == 0 {
-		query = `
-		SELECT id FROM audio_files
+		if errors.Is(err, pgx.ErrNoRows) {
+			query = `
+			SELECT id FROM audio_files
 			WHERE status = 'pending' AND deleted_at = 0
 			ORDER BY created_at ASC
 			LIMIT 1`
-		err = r.pg.Pool.QueryRow(ctx, query).Scan(&audio_id)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get audio file: %w", err)
+
+			err = r.pg.Pool.QueryRow(ctx, query).Scan(&audio_id)
+			if err != nil {
+				if errors.Is(err, pgx.ErrNoRows) {
+					return nil, fmt.Errorf("no pending audio files available")
+				}
+				return nil, fmt.Errorf("failed to get pending audio file: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to get processing audio file: %w", err)
 		}
 	}
 

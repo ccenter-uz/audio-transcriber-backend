@@ -242,17 +242,19 @@ RETURNS TABLE(
     done_segments integer, 
     invalid_segments integer, 
     done_files integer, 
-    error_files integer
+    error_files integer,
+    active_operators integer
 )
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT                                                                                                              
-        days.day::DATE AS stat_date,                                                                                    
-        COALESCE(done_seg.count, 0)::integer AS done_segments,                                                                   
-        COALESCE(invalid_seg.count, 0)::integer AS invalid_segments,                                                             
-        COALESCE(done_af.count, 0)::integer AS done_files,                                                                        
-        COALESCE(error_af.count, 0)::integer AS error_files                                                                      
+    SELECT
+        days.day::DATE AS stat_date,
+        COALESCE(done_seg.count, 0)::integer AS done_segments,
+        COALESCE(invalid_seg.count, 0)::integer AS invalid_segments,
+        COALESCE(done_af.count, 0)::integer AS done_files,
+        COALESCE(error_af.count, 0)::integer AS error_files,
+        COALESCE(active_ops.count, 0)::integer AS active_operators
     FROM (
         SELECT generate_series(from_date, to_date, INTERVAL '1 day') AS day
     ) AS days
@@ -280,6 +282,12 @@ BEGIN
         WHERE status = 'error' AND deleted_at = 0
         GROUP BY updated_at::DATE
     ) AS error_af ON error_af.day = days.day
+    LEFT JOIN (
+        SELECT updated_at::DATE AS day, COUNT(DISTINCT user_id) AS count
+        FROM transcripts
+        WHERE status = 'done' AND deleted_at = 0 AND user_id IS NOT NULL
+        GROUP BY updated_at::DATE
+    ) AS active_ops ON active_ops.day = days.day
     ORDER BY stat_date;
 END;
 $$ LANGUAGE plpgsql;
