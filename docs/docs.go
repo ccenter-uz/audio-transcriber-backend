@@ -1206,7 +1206,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "active_operators": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "done_audio_files": {
                     "type": "integer"

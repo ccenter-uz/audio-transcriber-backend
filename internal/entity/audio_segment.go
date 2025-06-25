@@ -52,12 +52,12 @@ type UserTranscriptStatictics struct {
 }
 
 type TranscriptStatictics struct {
-	StateDate       string `json:"state_date"`
-	DoneChunks      int    `json:"done_chunks"`
-	InvalidChunks   int    `json:"invalid_chunks"`
-	DoneAudioFiles  int    `json:"done_audio_files"`
-	ErrorAudioFiles int    `json:"error_audio_files"`
-	ActiveOperators int    `json:"active_operators"`
+	StateDate       string  `json:"state_date"`
+	DoneChunks      int     `json:"done_chunks"`
+	InvalidChunks   int     `json:"invalid_chunks"`
+	DoneAudioFiles  int     `json:"done_audio_files"`
+	ErrorAudioFiles int     `json:"error_audio_files"`
+	ActiveOperators float32 `json:"active_operators"`
 }
 
 type DatasetViewerList struct {

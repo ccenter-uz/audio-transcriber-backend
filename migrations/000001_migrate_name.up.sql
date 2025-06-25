@@ -233,7 +233,7 @@ EXECUTE FUNCTION update_audio_file_status_from_transcripts();
 
 
 
-CREATE OR REPLACE FUNCTION get_audio_transcript_stats_by_range(
+CREATE OR REPLACE FUNCTION get_audio_transcript_stats_by_range_ttttttt(
     from_date date, 
     to_date date
 )
