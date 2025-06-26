@@ -678,10 +678,15 @@ func (r *AudioSegmentRepo) GetHourlyTranscripts(ctx context.Context, userId stri
 	}
 	defer rows.Close()
 
-	resp := entity.ListDailyTranscriptResponse{}
+	resp := entity.ListDailyTranscriptResponse{
+		Data: []entity.DailyTranscriptResponse{},
+	}
 	userMap := make(map[string]*entity.DailyTranscriptResponse)
 
+	found := false
+
 	for rows.Next() {
+		found = true
 		var (
 			userID     string
 			username   string
@@ -709,9 +714,28 @@ func (r *AudioSegmentRepo) GetHourlyTranscripts(ctx context.Context, userId stri
 		})
 	}
 
+	if !found {
+		const fallbackQuery = `SELECT username FROM users WHERE id = $1`
+		var username string
+		err := r.pg.Pool.QueryRow(ctx, fallbackQuery, userId).Scan(&username)
+		if err != nil {
+			return nil, err
+		}
+
+		resp.Data = append(resp.Data, entity.DailyTranscriptResponse{
+			UserId:           userId,
+			Username:         username,
+			DailyTranscripts: []entity.DailyTranscript{},
+			TotalCount:       0,
+		})
+
+		return &resp, nil
+	}
+
 	for _, v := range userMap {
 		resp.Data = append(resp.Data, *v)
 	}
 
 	return &resp, nil
 }
+
