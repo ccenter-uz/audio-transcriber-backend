@@ -35,6 +35,17 @@ definitions:
       count:
         type: integer
     type: object
+  entity.DailyActiveBlock:
+    properties:
+      active_blocks:
+        type: number
+      operator_id:
+        type: string
+      stat_date:
+        type: string
+      username:
+        type: string
+    type: object
   entity.DailyTranscript:
     properties:
       count:
@@ -193,6 +204,10 @@ definitions:
     properties:
       active_operators:
         type: number
+      active_operators_block:
+        items:
+          $ref: '#/definitions/entity.DailyActiveBlock'
+        type: array
       done_audio_files:
         type: integer
       done_chunks:

@@ -117,6 +117,7 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	ORDER BY created_at ASC
 	LIMIT 1`
 
+	fmt.Println("UserID:", req.UserID)
 	err := r.pg.Pool.QueryRow(ctx, query, req.UserID).Scan(&audio_id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -605,10 +606,9 @@ func (r *AudioSegmentRepo) GetStatistics(ctx context.Context) (*entity.Statistic
 // }
 
 func (r *AudioSegmentRepo) GetAudioTranscriptStats(ctx context.Context, fromDate, toDate time.Time) (*[]entity.TranscriptStatictics, error) {
-
 	query := `SELECT * FROM get_audio_transcript_stats_by_range($1, $2)`
 
-	resp := []entity.TranscriptStatictics{}
+	var stats []entity.TranscriptStatictics
 
 	rows, err := r.pg.Pool.Query(ctx, query, fromDate, toDate)
 	if err != nil {
@@ -617,32 +617,56 @@ func (r *AudioSegmentRepo) GetAudioTranscriptStats(ctx context.Context, fromDate
 		}
 		return nil, fmt.Errorf("failed to get daily audio transcript stats: %w", err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var stateDate time.Time
-		var res entity.TranscriptStatictics
+		var stat entity.TranscriptStatictics
+
 		err := rows.Scan(
 			&stateDate,
-			&res.DoneChunks,
-			&res.DoneAudioFiles,
-			&res.InvalidChunks,
-			&res.ErrorAudioFiles,
-			&res.ActiveOperators,
+			&stat.DoneChunks,
+			&stat.InvalidChunks,
+			&stat.DoneAudioFiles,
+			&stat.ErrorAudioFiles,
+			&stat.ActiveOperators,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan  audio transcript stats: %w", err)
+			return nil, fmt.Errorf("failed to scan audio transcript stats: %w", err)
 		}
-		createdAt := stateDate.In(time.UTC)
-		res.StateDate = createdAt.Format("2006-01-02")
 
-		resp = append(resp, res)
+		stat.StateDate = stateDate.Format("2006-01-02")
+		stats = append(stats, stat)
 	}
 
+	query = "SELECT * FROM get_daily_active_blocks_per_user($1, $2)"
+	rows, err = r.pg.Pool.Query(ctx, query, fromDate, toDate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to scan transcript statistics: %w", err)
+		return nil, fmt.Errorf("failed to get daily active operators: %w", err)
+	}
+	defer rows.Close()
+
+	blocksMap := make(map[string][]entity.DailyActiveBlock)
+
+	for rows.Next() {
+		var block entity.DailyActiveBlock
+		var statDate time.Time
+
+		if err := rows.Scan(&statDate, &block.OperatorID, &block.Username, &block.ActiveBlocks); err != nil {
+			return nil, fmt.Errorf("failed to scan daily active operator: %w", err)
+		}
+
+		block.StatDate = statDate.Format("2006-01-02")
+		blocksMap[block.StatDate] = append(blocksMap[block.StatDate], block)
 	}
 
-	return &resp, nil
+	for i, stat := range stats {
+		if blocks, ok := blocksMap[stat.StateDate]; ok {
+			stats[i].ActiveOperatorsBlock = blocks
+		}
+	}
+
+	return &stats, nil
 }
 
 func (r *AudioSegmentRepo) GetHourlyTranscripts(ctx context.Context, userId string, date time.Time) (*entity.ListDailyTranscriptResponse, error) {

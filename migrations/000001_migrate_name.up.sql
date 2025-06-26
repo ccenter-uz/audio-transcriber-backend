@@ -233,64 +233,209 @@ EXECUTE FUNCTION update_audio_file_status_from_transcripts();
 
 
 
-CREATE OR REPLACE FUNCTION get_audio_transcript_stats_by_range_ttttttt(
-    from_date date, 
+CREATE OR REPLACE FUNCTION get_audio_transcript_stats_by_range(
+    from_date date,
     to_date date
 )
 RETURNS TABLE(
-    stat_date date, 
-    done_segments integer, 
-    invalid_segments integer, 
-    done_files integer, 
-    error_files integer,
-    active_operators integer
+    stat_date date,
+    done_segments bigint,
+    invalid_segments bigint,
+    done_files bigint,
+    error_files bigint,
+    active_operators numeric
 )
 AS $$
 BEGIN
-    RETURN QUERY
+RETURN QUERY
+WITH RECURSIVE 
+days AS (
+    SELECT generate_series(from_date, to_date, INTERVAL '1 day')::date AS day
+),
+done_seg AS (
+    SELECT updated_at::date AS day, COUNT(*) AS count
+    FROM transcripts
+    WHERE status = 'done' AND deleted_at = 0
+    GROUP BY updated_at::date
+),
+invalid_seg AS (
+    SELECT updated_at::date AS day, COUNT(*) AS count
+    FROM transcripts
+    WHERE status = 'invalid' AND deleted_at = 0
+    GROUP BY updated_at::date
+),
+done_af AS (
+    SELECT updated_at::date AS day, COUNT(*) AS count
+    FROM audio_files
+    WHERE status = 'done' AND deleted_at = 0
+    GROUP BY updated_at::date
+),
+error_af AS (
+    SELECT updated_at::date AS day, COUNT(*) AS count
+    FROM audio_files
+    WHERE status = 'error' AND deleted_at = 0
+    GROUP BY updated_at::date
+),
+first_transcript AS (
     SELECT
-        days.day::DATE AS stat_date,
-        COALESCE(done_seg.count, 0)::integer AS done_segments,
-        COALESCE(invalid_seg.count, 0)::integer AS invalid_segments,
-        COALESCE(done_af.count, 0)::integer AS done_files,
-        COALESCE(error_af.count, 0)::integer AS error_files,
-        COALESCE(active_ops.count, 0)::integer AS active_operators
-    FROM (
-        SELECT generate_series(from_date, to_date, INTERVAL '1 day') AS day
-    ) AS days
-    LEFT JOIN (
-        SELECT updated_at::DATE AS day, COUNT(*) AS count
-        FROM transcripts
-        WHERE status = 'done' AND deleted_at = 0
-        GROUP BY updated_at::DATE
-    ) AS done_seg ON done_seg.day = days.day
-    LEFT JOIN (
-        SELECT updated_at::DATE AS day, COUNT(*) AS count
-        FROM transcripts
-        WHERE status = 'invalid' AND deleted_at = 0
-        GROUP BY updated_at::DATE
-    ) AS invalid_seg ON invalid_seg.day = days.day
-    LEFT JOIN (
-        SELECT updated_at::DATE AS day, COUNT(*) AS count
-        FROM audio_files
-        WHERE status = 'done' AND deleted_at = 0
-        GROUP BY updated_at::DATE
-    ) AS done_af ON done_af.day = days.day
-    LEFT JOIN (
-        SELECT updated_at::DATE AS day, COUNT(*) AS count
-        FROM audio_files
-        WHERE status = 'error' AND deleted_at = 0
-        GROUP BY updated_at::DATE
-    ) AS error_af ON error_af.day = days.day
-    LEFT JOIN (
-        SELECT updated_at::DATE AS day, COUNT(DISTINCT user_id) AS count
-        FROM transcripts
-        WHERE status = 'done' AND deleted_at = 0 AND user_id IS NOT NULL
-        GROUP BY updated_at::DATE
-    ) AS active_ops ON active_ops.day = days.day
-    ORDER BY stat_date;
+        user_id,
+        DATE(updated_at) AS work_day,
+        MIN(updated_at) AS start_time
+    FROM transcripts
+    WHERE status = 'done' AND deleted_at = 0 AND user_id IS NOT NULL
+    GROUP BY user_id, DATE(updated_at)
+),
+blocks AS (
+    SELECT
+        ft.user_id,
+        ft.work_day,
+        ft.start_time AS block_start,
+        ft.start_time + INTERVAL '30 minutes' AS block_end
+    FROM first_transcript ft
+
+    UNION ALL
+
+    SELECT
+        b.user_id,
+        b.work_day,
+        b.block_end AS block_start,
+        b.block_end + INTERVAL '30 minutes' AS block_end
+    FROM blocks b
+    WHERE b.block_end < (b.work_day + INTERVAL '1 day')
+),
+block_activity AS (
+    SELECT DISTINCT
+        b.work_day,
+        b.user_id,
+        b.block_start
+    FROM blocks b
+    JOIN transcripts t
+        ON t.user_id = b.user_id
+        AND t.updated_at >= b.block_start
+        AND t.updated_at < b.block_end
+        AND t.status = 'done'
+        AND t.deleted_at = 0
+),
+active_per_day AS (
+    SELECT
+        work_day AS day,
+        COUNT(*)::numeric / 18.0 AS count
+    FROM block_activity
+    GROUP BY work_day
+)
+SELECT
+    d.day AS stat_date,
+    COALESCE(ds.count, 0),
+    COALESCE(isg.count, 0),
+    COALESCE(daf.count, 0),
+    COALESCE(eaf.count, 0),
+    ROUND(COALESCE(apd.count, 0), 2)
+FROM days d
+LEFT JOIN done_seg ds ON ds.day = d.day
+LEFT JOIN invalid_seg isg ON isg.day = d.day
+LEFT JOIN done_af daf ON daf.day = d.day
+LEFT JOIN error_af eaf ON eaf.day = d.day
+LEFT JOIN active_per_day apd ON apd.day = d.day
+ORDER BY d.day;
 END;
 $$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE FUNCTION get_daily_active_blocks_per_user(
+    from_date date,
+    to_date date
+)
+RETURNS TABLE(
+    stat_date date,
+    operator_id uuid,
+    username text,
+    active_blocks numeric
+)
+AS $$
+BEGIN
+RETURN QUERY
+WITH RECURSIVE
+first_transcript AS (
+    SELECT
+        t.user_id,
+        DATE(t.updated_at) AS work_day,
+        MIN(t.updated_at) AS start_time
+    FROM transcripts t
+    WHERE t.status = 'done' AND t.deleted_at = 0 AND t.user_id IS NOT NULL
+        AND t.updated_at::date BETWEEN from_date AND to_date
+    GROUP BY t.user_id, DATE(t.updated_at)
+),
+blocks AS (
+    SELECT
+        ft.user_id,
+        ft.work_day,
+        ft.start_time AS block_start,
+        ft.start_time + INTERVAL '30 minutes' AS block_end
+    FROM first_transcript ft
+
+    UNION ALL
+
+    SELECT
+        b.user_id,
+        b.work_day,
+        b.block_end AS block_start,
+        b.block_end + INTERVAL '30 minutes' AS block_end
+    FROM blocks b
+    WHERE b.block_end < (b.work_day + INTERVAL '1 day')
+),
+block_activity AS (
+    SELECT DISTINCT
+        b.work_day,
+        b.user_id,
+        b.block_start
+    FROM blocks b
+    JOIN transcripts t
+        ON t.user_id = b.user_id
+        AND t.updated_at >= b.block_start
+        AND t.updated_at < b.block_end
+        AND t.status = 'done'
+        AND t.deleted_at = 0
+),
+active_blocks_per_user AS (
+    SELECT
+        ba.work_day AS stat_date,
+        ba.user_id AS operator_id,
+        COUNT(*)::numeric / 18.0 AS active_blocks
+    FROM block_activity ba
+    GROUP BY ba.work_day, ba.user_id
+)
+SELECT
+    abpu.stat_date,
+    abpu.operator_id,
+    u.username,
+    ROUND(abpu.active_blocks, 2)
+FROM active_blocks_per_user abpu
+LEFT JOIN users u ON u.id = abpu.operator_id
+ORDER BY abpu.stat_date, u.username;
+END;
+$$ LANGUAGE plpgsql;
+
 
 
 
@@ -365,5 +510,9 @@ SELECT
   ROUND((weighted_spent_sum / total_weight)::numeric, 2) AS weighted_avg_spent_per_chunk_sec,
   ROUND(((weighted_spent_sum / total_weight) / 60.0)::numeric, 2) AS weighted_avg_spent_per_chunk_min
 FROM weighted;
+
+
+
+
 
 

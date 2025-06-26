@@ -965,6 +965,23 @@ const docTemplate = `{
                 }
             }
         },
+        "entity.DailyActiveBlock": {
+            "type": "object",
+            "properties": {
+                "active_blocks": {
+                    "type": "number"
+                },
+                "operator_id": {
+                    "type": "string"
+                },
+                "stat_date": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "entity.DailyTranscript": {
             "type": "object",
             "properties": {
@@ -1207,6 +1224,12 @@ const docTemplate = `{
             "properties": {
                 "active_operators": {
                     "type": "number"
+                },
+                "active_operators_block": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.DailyActiveBlock"
+                    }
                 },
                 "done_audio_files": {
                     "type": "integer"

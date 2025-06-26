@@ -134,7 +134,7 @@ func (h *Handler) GetAudioSegments(ctx *gin.Context) {
 
 	if len(audio_segment.AudioSegments) == 0 {
 		slog.Info("No audio_segment found")
-		audio_segment, err := h.UseCase.AudioSegmentRepo.GetList(ctx, &entity.GetAudioSegmentReq{UIserId: user_id})
+		audio_segment, err := h.UseCase.AudioSegmentRepo.GetList(ctx, &entity.GetAudioSegmentReq{UserID: user_id})
 		if h.HandleDbError(ctx, err, "Error getting audio_segment") {
 			slog.Error("GetAudioSegments error", slog.String("error", err.Error()))
 			return
