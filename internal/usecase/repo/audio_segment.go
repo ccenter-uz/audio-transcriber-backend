@@ -670,7 +670,7 @@ func (r *AudioSegmentRepo) GetAudioTranscriptStats(ctx context.Context, fromDate
 }
 
 func (r *AudioSegmentRepo) GetHourlyTranscripts(ctx context.Context, userId string, date time.Time) (*entity.ListDailyTranscriptResponse, error) {
-	query := `SELECT * FROM get_hourly_transcripts($1, $2);`
+	query := `SELECT * FROM get_half_hourly_transcripts($1, $2);`
 
 	rows, err := r.pg.Pool.Query(ctx, query, userId, date)
 	if err != nil {
