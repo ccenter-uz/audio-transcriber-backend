@@ -1,4 +1,4 @@
-CREATE TYPE file_status AS ENUM('pending', 'processing', 'done', 'error');
+CREATE TYPE file_status AS ENUM('pending', 'processing', 'done', 'error', 'unassigned');
 
 CREATE TYPE transcript_status AS ENUM('ready', 'invalid', 'done');
 

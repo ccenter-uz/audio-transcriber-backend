@@ -123,7 +123,7 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 		if errors.Is(err, pgx.ErrNoRows) {
 			query = `
 			SELECT id FROM audio_files
-			WHERE status = 'pending' AND deleted_at = 0
+			WHERE (status = 'pending' OR status = 'unassigned') AND deleted_at = 0
 			ORDER BY created_at ASC
 			LIMIT 1`
 
