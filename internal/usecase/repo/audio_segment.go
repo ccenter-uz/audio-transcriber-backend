@@ -222,15 +222,20 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 		audioSegments.Count = count
 	}
 
-	query = `SELECT user_id FROM audio_files WHERE id = $1 AND deleted_at = 0`
-	var userId string
+	// query = `SELECT user_id FROM audio_files WHERE id = $1 AND deleted_at = 0`
+	// var userId string
 
-	err = r.pg.Pool.QueryRow(ctx, query, audio_id).Scan(&userId)
-	if userId == "" {
-		_, err = r.pg.Pool.Exec(ctx, "UPDATE audio_files SET status = 'processing', user_id = $2, updated_at = now() WHERE id = $1 AND deleted_at = 0", audio_id, req.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to update file: %w", err)
-		}
+	// err = r.pg.Pool.QueryRow(ctx, query, audio_id).Scan(&userId)
+	// if userId == "" {
+	// 	_, err = r.pg.Pool.Exec(ctx, "UPDATE audio_files SET status = 'processing', user_id = $2, updated_at = now() WHERE id = $1 AND deleted_at = 0", audio_id, req.UserID)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to update file: %w", err)
+	// 	}
+	// }
+
+	_, err = r.pg.Pool.Exec(ctx, "UPDATE audio_files SET status = 'processing', user_id = $2, updated_at = now() WHERE id = $1 AND deleted_at = 0", audio_id, req.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update file: %w", err)
 	}
 
 	return &audioSegments, nil
@@ -738,4 +743,3 @@ func (r *AudioSegmentRepo) GetHourlyTranscripts(ctx context.Context, userId stri
 
 	return &resp, nil
 }
-
