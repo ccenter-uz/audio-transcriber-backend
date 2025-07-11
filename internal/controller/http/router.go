@@ -72,7 +72,7 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 
 	enforcer, err := casbin.NewEnforcer("./internal/controller/http/casbin/model.conf", "./internal/controller/http/casbin/policy.csv")
 	if err != nil {
-		slog.Error("Error while creating enforcer: ", err)
+		slog.Error("Error while creating enforcer: ", "err", err)
 	}
 
 	if enforcer == nil {

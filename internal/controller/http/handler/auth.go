@@ -56,11 +56,11 @@ func (h *Handler) Login(ctx *gin.Context) {
 	user, err := h.UseCase.AuthRepo.Login(ctx, &body)
 	if err == nil {
 		tokens := token.GenerateJWTToken(user.AgentID, user.Role, user.Name)
-		if err != nil {
-			slog.Error("Error generating token", slog.String("error", err.Error()))
-			ctx.JSON(500, gin.H{"error": "Error generating token"})
-			return
-		}
+		// if err != nil {
+		// 	slog.Error("Error generating token", slog.String("error", err.Error()))
+		// 	ctx.JSON(500, gin.H{"error": "Error generating token"})
+		// 	return
+		// }
 		slog.Info("Login successful")
 		ctx.JSON(200, gin.H{
 			"message":      "Login successful",
@@ -113,11 +113,11 @@ func (h *Handler) Login(ctx *gin.Context) {
 		return
 	}
 	tokens := token.GenerateJWTToken(user.AgentID, "transcriber", user.Name)
-	if err != nil {
-		slog.Error("Error generating token", slog.String("error", err.Error()))
-		ctx.JSON(500, gin.H{"error": "Error generating token"})
-		return
-	}
+	// if err != nil {
+	// 	slog.Error("Error generating token", slog.String("error", err.Error()))
+	// 	ctx.JSON(500, gin.H{"error": "Error generating token"})
+	// 	return
+	// }
 
 	slog.Info("Login successful")
 	ctx.JSON(200, gin.H{
@@ -244,7 +244,7 @@ func (h *Handler) GetUsers(ctx *gin.Context) {
 	limitValue, offsetValue, err := parsePaginationParams(ctx, limitStr, pageStr)
 	if err != nil {
 		ctx.JSON(400, gin.H{"Error": err.Error()})
-		slog.Error("Error parsing pagination parameters: ", err)
+		slog.Error("Error parsing pagination parameters: ", "err", err)
 		return
 	}
 
@@ -355,7 +355,7 @@ func parsePaginationParams(c *gin.Context, limit, offset string) (int, int, erro
 	if limit != "" {
 		parsedLimit, err := strconv.Atoi(limit)
 		if err != nil {
-			slog.Error("Invalid limit value", err)
+			slog.Error("Invalid limit value", "err", err)
 			c.JSON(400, gin.H{"error": "Invalid limit value"})
 			return 0, 0, err
 		}
@@ -365,7 +365,7 @@ func parsePaginationParams(c *gin.Context, limit, offset string) (int, int, erro
 	if offset != "" {
 		parsedOffset, err := strconv.Atoi(offset)
 		if err != nil {
-			slog.Error("Invalid offset value", err)
+			slog.Error("Invalid offset value", "err", err)
 			c.JSON(400, gin.H{"error": "Invalid offset value"})
 			return 0, 0, err
 		}

@@ -1165,6 +1165,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "emotion": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
