@@ -1,0 +1,1 @@
+alter table transcripts add column emotion varchar(50);

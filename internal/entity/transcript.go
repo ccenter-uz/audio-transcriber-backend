@@ -25,12 +25,14 @@ type UpdateTranscript struct {
 	ReportText         string  `json:"report_text"`
 	UserID             *string `json:"user_id"`
 	EntireAudioInvalid bool    `json:"entire_audio_invalid"`
+	Emotion            string  `json:"emotion"`
 }
 
 type UpdateTranscriptBody struct {
 	TranscriptText     string `json:"transcribe_text"`
 	ReportText         string `json:"report_text"`
 	EntireAudioInvalid bool   `json:"entire_audio_invalid"`
+	Emotion            string `json:"emotion"`
 }
 
 type GetTranscriptReq struct {

@@ -148,6 +148,7 @@ func (h *Handler) UpdateTranscript(ctx *gin.Context) {
 		ReportText:         body.ReportText,
 		UserID:             &user_id,
 		EntireAudioInvalid: body.EntireAudioInvalid,
+		Emotion:            body.Emotion,
 	})
 	if err != nil {
 		slog.Error("UpdateTranscript error", slog.String("error", err.Error()))

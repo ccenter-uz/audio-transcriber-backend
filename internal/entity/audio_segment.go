@@ -82,6 +82,7 @@ type DatasetViewerList struct {
 	Transcriber   *string  `json:"transcriber"`
 	TranscriberID *string  `json:"transcriber_id"`
 	MinutesSpent  *float32 `json:"minutes_spent"`
+	Emotion       *string  `json:"emotion"`
 }
 
 type DatasetViewerListResponse struct {

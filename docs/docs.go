@@ -1031,6 +1031,9 @@ const docTemplate = `{
                 "duration": {
                     "type": "number"
                 },
+                "emotion": {
+                    "type": "string"
+                },
                 "minutes_spent": {
                     "type": "number"
                 },
@@ -1251,6 +1254,9 @@ const docTemplate = `{
         "entity.UpdateTranscriptBody": {
             "type": "object",
             "properties": {
+                "emotion": {
+                    "type": "string"
+                },
                 "entire_audio_invalid": {
                     "type": "boolean"
                 },

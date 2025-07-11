@@ -70,6 +70,10 @@ func (r *TranscriptRepo) Update(ctx context.Context, req *entity.UpdateTranscrip
 		conditions = append(conditions, " report_text = $"+strconv.Itoa(len(args)+1))
 		args = append(args, req.ReportText)
 	}
+	if req.Emotion != "" && req.Emotion != "string" {
+		conditions = append(conditions, " emotion = $"+strconv.Itoa(len(args)+1))
+		args = append(args, req.Emotion)
+	}
 
 	if len(conditions) == 0 {
 		slog.Warn("nothing to update")

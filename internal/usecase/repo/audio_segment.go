@@ -166,7 +166,7 @@ func (r *AudioSegmentRepo) GetList(ctx context.Context, req *entity.GetAudioSegm
 	}
 
 	if req.Status != "" {
-		conditions = append(conditions, "t.status = $"+strconv.Itoa(len(args)+1))
+		conditions = append(conditions, "a.status = $"+strconv.Itoa(len(args)+1))
 		args = append(args, req.Status)
 	}
 
@@ -380,7 +380,8 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			t.report_text,
 			u.username,
 			u.id,
-			EXTRACT(EPOCH FROM t.updated_at - t.viewed_at) / 60 AS minutes_spent
+			EXTRACT(EPOCH FROM t.updated_at - t.viewed_at) / 60 AS minutes_spent,
+			t.emotion
 	` + baseQuery + `
 		ORDER BY af.id, afs.id
 		LIMIT $` + fmt.Sprint(argIdx) + ` OFFSET $` + fmt.Sprint(argIdx+1)
@@ -409,6 +410,7 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			&reps.Transcriber,
 			&reps.TranscriberID,
 			&reps.MinutesSpent,
+			&reps.Emotion,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan dataset viewer: %w", err)

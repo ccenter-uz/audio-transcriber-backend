@@ -78,6 +78,8 @@ definitions:
         type: string
       duration:
         type: number
+      emotion:
+        type: string
       minutes_spent:
         type: number
       next_text:
@@ -221,6 +223,8 @@ definitions:
     type: object
   entity.UpdateTranscriptBody:
     properties:
+      emotion:
+        type: string
       entire_audio_invalid:
         type: boolean
       report_text:

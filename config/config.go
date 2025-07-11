@@ -50,7 +50,7 @@ type (
 
 	// ApiKey -.
 	ApiKey struct {
-		Key string `env-required:"true" yaml:"key" env:"API_KEY"`
+		Key string `env-required:"false" yaml:"key" env:"API_KEY"`
 	}
 
 	// JWT -.
