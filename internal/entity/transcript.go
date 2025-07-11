@@ -11,7 +11,7 @@ type Transcript struct {
 	TranscriptText *string `json:"transcribe_text"`
 	ReportText     *string `json:"report_text"`
 	Status         string  `json:"status"`
-	Emotion        string  `json:"emotion"`
+	Emotion        *string  `json:"emotion"`
 	CreatedAt      string  `json:"created_at"`
 }
 
