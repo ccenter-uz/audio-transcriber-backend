@@ -28,11 +28,14 @@ type AudioSegmentList struct {
 }
 
 type TranscriptPersent struct {
-	AudioFileId       int     `json:"audio_file_id"`
-	Filename          string  `json:"filename"`
-	TotalSegments     int     `json:"total_segments"`
-	CompletedSegments int     `json:"completed_segments"`
-	Percent           float64 `json:"percent"`
+	TotalAudioFiles   int `json:"total_audio_files"`
+	DoneAudioFiles   int `json:"completed_audio_files"`
+	ProcessingAudio   int `json:"processing_audio"`
+	PendingAudioFiles int `json:"pending_audio_files"`
+	ErrorAudioFiles  int `json:"error_audio_files"`
+	TotalSegments     int `json:"total_segments"`
+	CompletedSegments int `json:"completed_segments"`
+	ReportSegments    int `json:"report_segments"`
 }
 
 // type UserTranscriptCount struct {

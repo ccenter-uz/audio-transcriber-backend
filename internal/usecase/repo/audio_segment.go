@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -255,32 +254,82 @@ func (r *AudioSegmentRepo) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (r *AudioSegmentRepo) GetTranscriptPercent(ctx context.Context) (*[]entity.TranscriptPersent, error) {
-	query := `SELECT * FROM calculate_transcription_percentage()`
+func (r *AudioSegmentRepo) GetTranscriptPercent(ctx context.Context) (*entity.TranscriptPersent, error) {
+	// query := `SELECT * FROM calculate_transcription_percentage()`
 
-	rows, err := r.pg.Pool.Query(ctx, query)
+	res := entity.TranscriptPersent{}
+
+	query := "select count(id) from audio_files where deleted_at = 0"
+	err := r.pg.Pool.QueryRow(ctx, query).Scan(&res.TotalAudioFiles)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to scan total audio files: %w", err)
 	}
-	defer rows.Close()
 
-	res := []entity.TranscriptPersent{}
-	for rows.Next() {
-		reps := entity.TranscriptPersent{}
-		err := rows.Scan(
-			&reps.AudioFileId,
-			&reps.Filename,
-			&reps.TotalSegments,
-			&reps.CompletedSegments,
-			&reps.Percent,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan calculate_transcription_percentage: %w", err)
-		}
-
-		reps.Percent = math.Round(reps.Percent*100) / 100
-		res = append(res, reps)
+	query = "select count(id) from audio_files where status = 'processing' and deleted_at = 0"
+	err = r.pg.Pool.QueryRow(ctx, query).Scan(&res.ProcessingAudio)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan total processing audio files: %w", err)
 	}
+
+	query = "select count(id) from audio_files where status = 'pending' and deleted_at = 0"
+	err = r.pg.Pool.QueryRow(ctx, query).Scan(&res.PendingAudioFiles)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan total pendning audio files: %w", err)
+	}
+
+	query = "select count(id) from audio_files where status = 'done' and deleted_at = 0"
+	err = r.pg.Pool.QueryRow(ctx, query).Scan(&res.DoneAudioFiles)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan total done audio files: %w", err)
+	}
+
+	query = "select count(id) from audio_files where status = 'error' and deleted_at = 0"
+	err = r.pg.Pool.QueryRow(ctx, query).Scan(&res.ErrorAudioFiles)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan total error audio files: %w", err)
+	}
+
+	query = "select count(id) from transcripts where deleted_at = 0"
+	err = r.pg.Pool.QueryRow(ctx, query).Scan(&res.TotalSegments)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan total  chunks: %w", err)
+	}
+
+	query = "select count(id) from transcripts where status = 'done' and deleted_at = 0"
+	err = r.pg.Pool.QueryRow(ctx, query).Scan(&res.CompletedSegments)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan total done chunks: %w", err)
+	}
+
+	query = "select count(id) from transcripts where status = 'invalid' and deleted_at = 0"
+	err = r.pg.Pool.QueryRow(ctx, query).Scan(&res.ReportSegments)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan total report chunks: %w", err)
+	}
+
+	// rows, err := r.pg.Pool.Query(ctx, query)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer rows.Close()
+
+	// res := []entity.TranscriptPersent{}
+	// for rows.Next() {
+	// 	reps := entity.TranscriptPersent{}
+	// 	err := rows.Scan(
+	// 		&reps.AudioFileId,
+	// 		&reps.Filename,
+	// 		&reps.TotalSegments,
+	// 		&reps.CompletedSegments,
+	// 		&reps.Percent,
+	// 	)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to scan calculate_transcription_percentage: %w", err)
+	// 	}
+
+	// 	reps.Percent = math.Round(reps.Percent*100) / 100
+	// 	res = append(res, reps)
+	// }
 
 	return &res, nil
 }

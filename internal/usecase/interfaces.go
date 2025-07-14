@@ -38,7 +38,7 @@ type (
 		GetById(ctx context.Context, id int) (*entity.AudioSegment, error)
 		GetList(ctx context.Context, req *entity.GetAudioSegmentReq) (*entity.AudioSegmentList, error)
 		Delete(ctx context.Context, id int) error
-		GetTranscriptPercent(ctx context.Context) (*[]entity.TranscriptPersent, error)
+		GetTranscriptPercent(ctx context.Context) (*entity.TranscriptPersent, error)
 		GetUserTranscriptStatictics(ctx context.Context, user_id string) (*entity.UserTranscriptStatictics, error)
 		DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report bool) (*entity.DatasetViewerListResponse, error)
 		GetStatistics(ctx context.Context) (*entity.Statistics, error)

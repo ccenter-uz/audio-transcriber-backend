@@ -1205,17 +1205,26 @@ const docTemplate = `{
         "entity.TranscriptPersent": {
             "type": "object",
             "properties": {
-                "audio_file_id": {
+                "completed_audio_files": {
                     "type": "integer"
                 },
                 "completed_segments": {
                     "type": "integer"
                 },
-                "filename": {
-                    "type": "string"
+                "error_audio_files": {
+                    "type": "integer"
                 },
-                "percent": {
-                    "type": "number"
+                "pending_audio_files": {
+                    "type": "integer"
+                },
+                "processing_audio": {
+                    "type": "integer"
+                },
+                "report_segments": {
+                    "type": "integer"
+                },
+                "total_audio_files": {
+                    "type": "integer"
                 },
                 "total_segments": {
                     "type": "integer"
