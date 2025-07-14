@@ -95,7 +95,7 @@ func (h *Handler) GetAudioSegments(ctx *gin.Context) {
 	var user_id string
 	claims, exists := ctx.Get("claims")
 	if !exists {
-		slog.Error("error", "Unauthorized")
+		slog.Error("error", "", "Unauthorized")
 		ctx.JSON(401, entity.ErrorResponse{
 			Code:    config.ErrorUnauthorized,
 			Message: "Unauthorizedd",
@@ -290,7 +290,7 @@ func (h *Handler) DatasetViewer(ctx *gin.Context) {
 	report := ctx.Query("report")
 	reportBool, err := strconv.ParseBool(report)
 	if err != nil {
-		slog.Error("Error parsing report parameter: ", err)
+		slog.Error("Error parsing report parameter: ", "err", err)
 		ctx.JSON(400, gin.H{"Error": "Invalid report parameter"})
 		return
 	}
@@ -299,7 +299,7 @@ func (h *Handler) DatasetViewer(ctx *gin.Context) {
 	limitValue, offsetValue, err := parsePaginationParams(ctx, limitStr, pageStr)
 	if err != nil {
 		ctx.JSON(400, gin.H{"Error": err.Error()})
-		slog.Error("Error parsing pagination parameters: ", err)
+		slog.Error("Error parsing pagination parameters: ", "err", err)
 		return
 	}
 	req.Limit = limitValue

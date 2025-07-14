@@ -70,7 +70,7 @@ func (h *Handler) GetTranscripts(ctx *gin.Context) {
 	limitValue, offsetValue, err := parsePaginationParams(ctx, limitStr, pageStr)
 	if err != nil {
 		ctx.JSON(400, gin.H{"Error": err.Error()})
-		slog.Error("Error parsing pagination parameters: ", err)
+		slog.Error("Error parsing pagination parameters: ", "err", err)
 		return
 	}
 
@@ -132,7 +132,7 @@ func (h *Handler) UpdateTranscript(ctx *gin.Context) {
 	var user_id string
 	claims, exists := ctx.Get("claims")
 	if !exists {
-		slog.Error("error", "Unauthorized")
+		slog.Error("error", "", "Unauthorized")
 		ctx.JSON(401, entity.ErrorResponse{
 			Code:    config.ErrorUnauthorized,
 			Message: "Unauthorizedd",

@@ -34,14 +34,14 @@ import (
 func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
-		slog.Error("Error getting file from form", err)
+		slog.Error("Error getting file from form", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
 	tempPath := filepath.Join(os.TempDir(), file.Filename)
 	if err := c.SaveUploadedFile(file, tempPath); err != nil {
-		slog.Error("Error saving zip file", err)
+		slog.Error("Error saving zip file", "err", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error saving zip file"})
 		return
 	}
@@ -49,7 +49,7 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 
 	r, err := zip.OpenReader(tempPath)
 	if err != nil {
-		slog.Error("Error opening zip file", err)
+		slog.Error("Error opening zip file", "err", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to open zip file"})
 		return
 	}
@@ -57,28 +57,28 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 
 	outputDir := "./internal/media/audio"
 	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
-		slog.Error("Error creating output folder", err)
+		slog.Error("Error creating output folder", "err", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create output folder"})
 		return
 	}
 
 	for _, f := range r.File {
 		if !isAudioFile(f.Name) {
-			slog.Info("Skipping non-audio file", f.Name)
+			slog.Warn("Skipping non-audio file", "", f.Name)
 			continue
 		}
 
 		dstPath := filepath.Join(outputDir, filepath.Base(f.Name))
 		dstFile, err := os.Create(dstPath)
 		if err != nil {
-			slog.Error("Error creating file", err)
+			slog.Error("Error creating file", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create file"})
 			return
 		}
 		rc, err := f.Open()
 		if err != nil {
 			dstFile.Close()
-			slog.Error("Error opening file", err)
+			slog.Error("Error opening file", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to open file"})
 			return
 		}
@@ -86,7 +86,7 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 		dstFile.Close()
 		rc.Close()
 		if err != nil {
-			slog.Error("Error writing file", err)
+			slog.Error("Error writing file", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to write file"})
 			return
 		}
@@ -104,13 +104,13 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 		})
 		if err != nil {
 			c.JSON(500, gin.H{"error": err})
-			slog.Error("error:", err)
+			slog.Error("error:", "err", err)
 			return
 		}
 
 		err = h.Chunking(c, *audio_id, dstPath)
 		if err != nil {
-			slog.Error("Error chunking audio file", err)
+			slog.Error("Error chunking audio file", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to chunk audio file"})
 			return
 		}

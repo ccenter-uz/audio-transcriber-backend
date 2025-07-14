@@ -188,7 +188,8 @@ func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcrip
 		COALESCE(NULLIF(t.transcribe_text, ''), '') AS transcribe_text,
 		COALESCE(NULLIF(t.report_text, ''), '') AS report_text,
 		t.status,
-		t.created_at
+		t.created_at,
+		COALESCE(t.emotion::text, '') AS emotion
 	FROM transcripts t
 	LEFT JOIN users u ON t.user_id = u.id
 	JOIN audio_file_segments s ON t.segment_id = s.id
@@ -207,7 +208,8 @@ func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcrip
 		&transcript.TranscriptText,
 		&transcript.ReportText,
 		&transcript.Status,
-		&createdAt)
+		&createdAt,
+		transcript.Emotion)
 	if err != nil {
 		tr.Rollback(ctx)
 		return nil, fmt.Errorf("failed to get transcripts: %w", err)
