@@ -175,6 +175,8 @@ definitions:
         type: integer
       status:
         type: string
+      transcribe_option:
+        type: string
       transcribe_text:
         type: string
       user_id:

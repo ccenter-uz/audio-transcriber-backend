@@ -2,6 +2,7 @@ package handler
 
 import (
 	"archive/zip"
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -235,10 +237,21 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 			return err
 		}
 
+		text, err := extractTranscript("./internal/media/million.vtt", chunk.Start, chunk.End)
+		if err != nil {
+			slog.Error("Failed to extract transcript", "err", err)
+			return err
+		}
+
+		if text == "" {
+			fmt.Println(chunk.Start, chunk.End)
+		}
+
 		err = h.UseCase.AudioSegmentRepo.Create(c, &entity.CreateAudioSegment{
-			AudioId:  audio_id,
-			FileName: minioURL,
-			Duration: float32(chunk.End - chunk.Start),
+			AudioId:          audio_id,
+			FileName:         minioURL,
+			Duration:         float32(chunk.End - chunk.Start),
+			TranscribeOption: text,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create audio segment: %w", err)
@@ -312,4 +325,60 @@ func (h *Handler) GetAudioFile(ctx *gin.Context) {
 
 	slog.Info("AudioFile retrieved successfully")
 	ctx.JSON(200, audioFile)
+}
+
+func parseTimestamp(ts string) float64 {
+	parts := strings.Split(ts, ":")
+	if len(parts) != 3 {
+		return 0
+	}
+	h, _ := strconv.Atoi(parts[0])
+	m, _ := strconv.Atoi(parts[1])
+	splitSec := strings.Split(parts[2], ".")
+	s, _ := strconv.Atoi(splitSec[0])
+	ms, _ := strconv.Atoi(splitSec[1])
+	return float64(h*3600+m*60+s) + float64(ms)/1000
+}
+
+// Faqat <00:...><c>...> ni olib tashlaydi, lekin [Musiqa] larni qoldiradi
+func cleanText(line string) string {
+	line = regexp.MustCompile(`<[^>]+>`).ReplaceAllString(line, "") // Faqat <...> olib tashlanadi
+	return strings.TrimSpace(line)
+}
+
+func extractTranscript(vttFile string, startSecond, endSecond float64) (string, error) {
+	file, err := os.Open(vttFile)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var result []string
+	var isInsideBlock bool
+	var currentStart, currentEnd float64
+	seen := make(map[string]bool)
+
+	reTime := regexp.MustCompile(`(\d{2}:\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3})`)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if matches := reTime.FindStringSubmatch(line); len(matches) == 3 {
+			currentStart = parseTimestamp(matches[1])
+			currentEnd = parseTimestamp(matches[2])
+			isInsideBlock = currentEnd >= startSecond && currentStart <= endSecond
+			continue
+		}
+
+		if isInsideBlock {
+			line = cleanText(line)
+			if line != "" && !seen[line] {
+				result = append(result, line)
+				seen[line] = true
+			}
+		}
+	}
+
+	return strings.Join(result, " "), nil
 }

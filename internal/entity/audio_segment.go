@@ -1,9 +1,10 @@
 package entity
 
 type CreateAudioSegment struct {
-	AudioId  int     `json:"audio_id"`
-	FileName string  `json:"filename_name"`
-	Duration float32 `json:"duration"`
+	AudioId          int     `json:"audio_id"`
+	FileName         string  `json:"filename_name"`
+	Duration         float32 `json:"duration"`
+	TranscribeOption string  `json:"transcribe_option"`
 }
 
 type AudioSegment struct {
@@ -29,10 +30,10 @@ type AudioSegmentList struct {
 
 type TranscriptPersent struct {
 	TotalAudioFiles   int `json:"total_audio_files"`
-	DoneAudioFiles   int `json:"completed_audio_files"`
+	DoneAudioFiles    int `json:"completed_audio_files"`
 	ProcessingAudio   int `json:"processing_audio"`
 	PendingAudioFiles int `json:"pending_audio_files"`
-	ErrorAudioFiles  int `json:"error_audio_files"`
+	ErrorAudioFiles   int `json:"error_audio_files"`
 	TotalSegments     int `json:"total_segments"`
 	CompletedSegments int `json:"completed_segments"`
 	ReportSegments    int `json:"report_segments"`

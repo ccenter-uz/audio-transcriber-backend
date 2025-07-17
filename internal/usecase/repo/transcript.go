@@ -31,8 +31,8 @@ func NewTranscriptRepo(pg *postgres.Postgres, config *config.Config, logger *log
 
 func (r *TranscriptRepo) Create(ctx context.Context, req *entity.CreateTranscript) error {
 	query := `
-	INSERT INTO transcripts (segment_id, user_id, ai_text, transcribe_text, report_text)
-	VALUES ($1, $2, $3, $4, $5)
+	INSERT INTO transcripts (segment_id, user_id, ai_text, transcribe_text, report_text, transcribe_option)
+	VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
 	_, err := r.pg.Pool.Exec(ctx, query, req.SegmentId, req.AIText)
@@ -150,6 +150,8 @@ func (r *TranscriptRepo) Update(ctx context.Context, req *entity.UpdateTranscrip
 	return nil
 }
 
+/*******  265c5889-59a5-4da9-8408-04d54d2d61aa  *******/
+
 // func (r *TranscriptRepo) UpdateStatus(ctx context.Context, id *int, user_id string) error {
 // 	query := `
 // 	UPDATE
@@ -187,6 +189,7 @@ func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcrip
 		COALESCE(t.ai_text::text, '') AS ai_text,
 		COALESCE(NULLIF(t.transcribe_text, ''), '') AS transcribe_text,
 		COALESCE(NULLIF(t.report_text, ''), '') AS report_text,
+		COALESCE(NULLIF(t.transcribe_option, ''), '') AS transcribe_option,
 		t.status,
 		t.created_at,
 		COALESCE(NULLIF(t.emotion, ''), '') AS emotion
@@ -207,6 +210,7 @@ func (r *TranscriptRepo) GetById(ctx context.Context, id int) (*entity.Transcrip
 		&transcript.AIText,
 		&transcript.TranscriptText,
 		&transcript.ReportText,
+		&transcript.TranscriptOption,
 		&transcript.Status,
 		&createdAt,
 		&transcript.Emotion)

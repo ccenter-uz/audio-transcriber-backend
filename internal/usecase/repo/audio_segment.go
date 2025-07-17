@@ -58,11 +58,11 @@ func (r *AudioSegmentRepo) Create(ctx context.Context, req *entity.CreateAudioSe
 	}
 
 	query = `
-	INSERT INTO transcripts (segment_id)
-	VALUES ($1)
+	INSERT INTO transcripts (segment_id, transcribe_option)
+	VALUES ($1, $2)
 	`
 
-	_, err = tr.Exec(ctx, query, id)
+	_, err = tr.Exec(ctx, query, id, req.TranscribeOption)
 	if err != nil {
 		tr.Rollback(ctx)
 		return fmt.Errorf("failed to create transcript: %w", err)

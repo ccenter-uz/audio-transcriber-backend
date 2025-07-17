@@ -1,18 +1,19 @@
 package entity
 
 type Transcript struct {
-	Id             int     `json:"id"`
-	AudioId        int     `json:"audio_id"`
-	AudioName      string  `json:"audio_name"`
-	SegmentId      int     `json:"segment_id"`
-	UserId         *string `json:"user_id"`
-	Username       *string `json:"username"`
-	AIText         *string `json:"ai_text"`
-	TranscriptText *string `json:"transcribe_text"`
-	ReportText     *string `json:"report_text"`
-	Status         string  `json:"status"`
-	Emotion        *string  `json:"emotion"`
-	CreatedAt      string  `json:"created_at"`
+	Id               int     `json:"id"`
+	AudioId          int     `json:"audio_id"`
+	AudioName        string  `json:"audio_name"`
+	SegmentId        int     `json:"segment_id"`
+	UserId           *string `json:"user_id"`
+	Username         *string `json:"username"`
+	AIText           *string `json:"ai_text"`
+	TranscriptText   *string `json:"transcribe_text"`
+	ReportText       *string `json:"report_text"`
+	TranscriptOption *string `json:"transcribe_option"`
+	Status           string  `json:"status"`
+	Emotion          *string `json:"emotion"`
+	CreatedAt        string  `json:"created_at"`
 }
 
 type CreateTranscript struct {

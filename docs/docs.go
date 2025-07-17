@@ -1180,6 +1180,9 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
+                "transcribe_option": {
+                    "type": "string"
+                },
                 "transcribe_text": {
                     "type": "string"
                 },
