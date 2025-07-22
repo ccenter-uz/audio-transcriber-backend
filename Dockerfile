@@ -21,7 +21,7 @@ COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/internal/controller/http/casbin/model.conf ./internal/controller/http/casbin/
 COPY --from=builder /app/internal/controller/http/casbin/policy.csv ./internal/controller/http/casbin/
 
-COPY --from=builder /app/internal/media/million.vtt ./internal/media/million.vtt
+COPY --from=builder /app/internal/media/ ./internal/media/
 
 ENV TZ=Asia/Tashkent
 RUN ln -snf /usr/share/zoneinfo/Asia/Tashkent /etc/localtime && echo "Asia/Tashkent" > /etc/timezone

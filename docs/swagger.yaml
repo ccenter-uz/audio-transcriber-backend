@@ -601,6 +601,10 @@ paths:
         in: query
         name: report
         type: boolean
+      - description: Russian
+        in: query
+        name: ru
+        type: boolean
       - description: Offset for pagination
         in: query
         name: offset

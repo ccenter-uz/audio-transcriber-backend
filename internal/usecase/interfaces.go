@@ -40,7 +40,7 @@ type (
 		Delete(ctx context.Context, id int) error
 		GetTranscriptPercent(ctx context.Context) (*entity.TranscriptPersent, error)
 		GetUserTranscriptStatictics(ctx context.Context, user_id string) (*entity.UserTranscriptStatictics, error)
-		DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report bool) (*entity.DatasetViewerListResponse, error)
+		DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report, ruBool bool) (*entity.DatasetViewerListResponse, error)
 		GetStatistics(ctx context.Context) (*entity.Statistics, error)
 		GetAudioTranscriptStats(ctx context.Context, fromDate, toDate time.Time) (*[]entity.TranscriptStatictics, error)
 		GetHourlyTranscripts(ctx context.Context, userId string, date time.Time) (*entity.ListDailyTranscriptResponse, error)

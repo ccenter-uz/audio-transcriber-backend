@@ -110,7 +110,7 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 			return
 		}
 
-		err = h.Chunking(c, *audio_id, dstPath)
+		err = h.Chunking(c, *audio_id, dstPath, f.Name)
 		if err != nil {
 			slog.Error("Error chunking audio file", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to chunk audio file"})
@@ -144,7 +144,7 @@ type Response struct {
 	Chunks []Chunk `json:"chunks"`
 }
 
-func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error {
+func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afileName string) error {
 	url := "http://192.168.31.27:9512/vad-chunk"
 
 	file, err := os.Open(audioPath)
@@ -237,21 +237,30 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string) error
 			return err
 		}
 
-		text, err := extractTranscript("./internal/media/million.vtt", chunk.Start, chunk.End)
-		if err != nil {
-			slog.Error("Failed to extract transcript", "err", err)
-			return err
-		}
+		// a, err := strconv.Atoi(afileName[14:15])
+		// fmt.Println("afileName", afileName, "a", a)
+		// if err != nil {
+		// 	slog.Error("Failed to convert afileName to int", "afileName", afileName, "err", err)
+		// 	return fmt.Errorf("failed to convert afileName to int: %w", err)
+		// }
+		// chunk.Start = chunk.Start + (1800 * float64(a))
+		// chunk.End = chunk.End + (1800 * float64(a))
 
-		if text == "" {
-			fmt.Println(chunk.Start, chunk.End)
-		}
+		// text, err := extractTranscript("./internal/media/amira.vtt", chunk.Start, chunk.End)
+		// if err != nil {
+		// 	slog.Error("Failed to extract transcript", "err", err)
+		// 	return err
+		// }
+
+		// if text == "" {
+		// 	fmt.Println(chunk.Start, chunk.End)
+		// }
 
 		err = h.UseCase.AudioSegmentRepo.Create(c, &entity.CreateAudioSegment{
 			AudioId:          audio_id,
 			FileName:         minioURL,
 			Duration:         float32(chunk.End - chunk.Start),
-			TranscribeOption: text,
+			// TranscribeOption: text,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create audio segment: %w", err)

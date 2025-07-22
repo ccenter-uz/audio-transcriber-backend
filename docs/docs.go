@@ -490,6 +490,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "boolean",
+                        "description": "Russian",
+                        "name": "ru",
+                        "in": "query"
+                    },
+                    {
                         "type": "number",
                         "description": "Offset for pagination",
                         "name": "offset",

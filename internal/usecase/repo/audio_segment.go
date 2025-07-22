@@ -365,7 +365,7 @@ func (r *AudioSegmentRepo) GetUserTranscriptStatictics(ctx context.Context, user
 	return &res, nil
 }
 
-func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report bool) (*entity.DatasetViewerListResponse, error) {
+func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report, ruBool bool) (*entity.DatasetViewerListResponse, error) {
 	baseQuery := `
 		FROM audio_files af
 		JOIN audio_file_segments afs ON af.id = afs.audio_id
@@ -395,6 +395,12 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 	if user_id != "" {
 		conditions = append(conditions, fmt.Sprintf("u.id = $%d", argIdx))
 		args = append(args, user_id)
+		argIdx++
+	}
+
+	if ruBool {
+		conditions = append(conditions, fmt.Sprintf("t.transcribe_text ILIKE $%d", argIdx))
+		args = append(args, "%(ru:%")
 		argIdx++
 	}
 

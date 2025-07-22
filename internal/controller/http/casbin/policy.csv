@@ -13,9 +13,9 @@ p, transcriber,  /api/v1/audio_segment/:id,        GET
 
 p, transcriber,  /api/v1/dashboard/user/:user_id,  GET
 p, transcriber,  /api/v1/dashboard/hours,          GET
+p, transcriber,  /api/v1/dataset_viewer,           GET
 
 p, admin,       /api/v1/dashboard,                 GET
-p, admin,       /api/v1/dataset_viewer,            GET
 p, admin,       /api/v1/statistic,                 GET
 p, admin,       /api/v1/dashboard/stats,           GET
 
