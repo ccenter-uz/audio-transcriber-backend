@@ -12,6 +12,13 @@ import (
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
 )
 
+var allowedUsers = map[string]bool{
+	"3bc26bff-3ba9-44c5-a7b0-3efc1597e1e8": true,
+	"02ae5f10-3500-40a3-a440-717b31ce03cb": true,
+	"e5e189d8-fd6a-4032-b88a-dfb41dfe1719": true,
+	"cc196d3a-c41c-4e7c-86c6-c8833475047b": true,
+}
+
 // GetAudioSegment godoc
 // @Router /api/v1/audio_segment/{id} [get]
 // @Summary Get a audio_segment by ID
@@ -124,6 +131,11 @@ func (h *Handler) GetAudioSegments(ctx *gin.Context) {
 	req.Status = ctx.Query("status")
 	req.UIserId = user_id
 	req.UserID = ctx.Query("user_id")
+
+	if !allowedUsers[req.UserID] {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
 
 	// Fetch audio_segment
 	audio_segment, err := h.UseCase.AudioSegmentRepo.GetList(ctx, &req)

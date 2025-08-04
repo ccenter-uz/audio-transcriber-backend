@@ -11,8 +11,8 @@ services:
     environment:
       - TZ=Asia/Tashkent
     depends_on:
-      vcdb:
-        condition: service_started
+      # vcdb:
+      #   condition: service_started
       minio:
         condition: service_started
   minio:
@@ -38,39 +38,39 @@ services:
   #   networks:
   #     - ntwrk
 
-  vcdb:
-    image: postgres:latest
-    container_name: vcdb
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mirxonjon
-      POSTGRES_DB: voice_transcribe
-    ports:
-      - "5436:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - ntwrk
-  migrate:
-    image: migrate/migrate
-    depends_on:
-      - vcdb
-    volumes:
-      - ./migrations:/migrations
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      sleep 5 &&
-      migrate -path=/migrations -database=${PG_URL} up
-    environment:
-      - DATABASE_URL=${PG_URL}
+  # vcdb:
+  #   image: postgres:latest
+  #   container_name: vcdb
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: mirxonjon
+  #     POSTGRES_DB: voice_transcribe
+  #   ports:
+  #     - "5436:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - ntwrk
+  # migrate:
+  #   image: migrate/migrate
+  #   depends_on:
+  #     - vcdb
+  #   volumes:
+  #     - ./migrations:/migrations
+  #   entrypoint: ["/bin/sh", "-c"]
+  #   command: >
+  #     sleep 5 &&
+  #     migrate -path=/migrations -database=${PG_URL} up
+  #   environment:
+  #     - DATABASE_URL=${PG_URL}
 
 networks:
   ntwrk: 
     external: true
 
 
-volumes:
-  postgres_data:
-    driver: local
+# volumes:
+#   postgres_data:
+#     driver: local
   # minio_data:
   #   driver: local
