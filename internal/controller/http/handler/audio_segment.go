@@ -15,7 +15,7 @@ import (
 var allowedUsers = map[string]bool{
 	"3bc26bff-3ba9-44c5-a7b0-3efc1597e1e8": true,
 	"02ae5f10-3500-40a3-a440-717b31ce03cb": true,
-	"e5e189d8-fd6a-4032-b88a-dfb41dfe1719": true,
+	"74bc7090-b052-4faa-b140-ff551d95ef44": true,
 	"cc196d3a-c41c-4e7c-86c6-c8833475047b": true,
 	"198e6cf5-0a80-4ad2-837d-7c2163ec7a8d": true,
 }
