@@ -246,7 +246,7 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afile
 		chunk.Start = chunk.Start + (1800 * float64(a))
 		chunk.End = chunk.End + (1800 * float64(a))
 
-		text, err := extractTranscript("./internal/media/afzal.vtt", chunk.Start, chunk.End)
+		text, err := extractTranscript("./internal/media/yakudza.vtt", chunk.Start, chunk.End)
 		if err != nil {
 			slog.Error("Failed to extract transcript", "err", err)
 			return err
