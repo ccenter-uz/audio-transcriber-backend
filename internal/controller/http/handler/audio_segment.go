@@ -18,6 +18,7 @@ var allowedUsers = map[string]bool{
 	"74bc7090-b052-4faa-b140-ff551d95ef44": true,
 	"cc196d3a-c41c-4e7c-86c6-c8833475047b": true,
 	"198e6cf5-0a80-4ad2-837d-7c2163ec7a8d": true,
+	"6c57c940-4884-4eab-a7fd-fd2d3a454397": true,
 }
 
 // GetAudioSegment godoc
