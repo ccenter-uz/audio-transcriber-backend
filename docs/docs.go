@@ -496,6 +496,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "boolean",
+                        "description": "Number",
+                        "name": "number",
+                        "in": "query"
+                    },
+                    {
                         "type": "number",
                         "description": "Offset for pagination",
                         "name": "offset",
@@ -1056,6 +1062,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "text": {
+                    "type": "string"
+                },
+                "transcribe_text_normalized": {
                     "type": "string"
                 },
                 "transcriber": {

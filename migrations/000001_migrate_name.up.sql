@@ -54,6 +54,7 @@ CREATE TABLE transcripts (
     transcribe_text TEXT,
     report_text TEXT,
     transcribe_option TEXT,
+    transcribe_text_normalized TEXT,
     emotion VARCHAR(50),
     status transcript_status NOT NULL DEFAULT 'ready',
     viewed_at TIMESTAMP DEFAULT '2025-05-01 00:00:00',

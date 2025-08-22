@@ -365,7 +365,7 @@ func (r *AudioSegmentRepo) GetUserTranscriptStatictics(ctx context.Context, user
 	return &res, nil
 }
 
-func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report, ruBool bool) (*entity.DatasetViewerListResponse, error) {
+func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter, user_id string, report, ruBool, number bool) (*entity.DatasetViewerListResponse, error) {
 	baseQuery := `
 		FROM audio_files af
 		JOIN audio_file_segments afs ON af.id = afs.audio_id
@@ -404,6 +404,12 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 		argIdx++
 	}
 
+	if number {
+		conditions = append(conditions, fmt.Sprintf("t.transcribe_text ~ $%d", argIdx))
+		args = append(args, "\\d") 
+		argIdx++
+	}
+
 	statusCondition := "t.status = 'done'"
 	if report {
 		statusCondition = "t.status = 'invalid'"
@@ -433,6 +439,7 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			LEAD(t.transcribe_text) OVER (PARTITION BY af.id ORDER BY afs.id) AS next_text,
 			aggregated_segments.all_transcripts,
 			t.report_text,
+			t.transcribe_text_normalized,
 			u.username,
 			u.id,
 			EXTRACT(EPOCH FROM t.updated_at - t.viewed_at) / 60 AS minutes_spent,
@@ -462,6 +469,7 @@ func (r *AudioSegmentRepo) DatasetViewer(ctx context.Context, req *entity.Filter
 			&reps.NextText,
 			&reps.Sentence,
 			&reps.ReportText,
+			&reps.TranscribeTextNormalized,
 			&reps.Transcriber,
 			&reps.TranscriberID,
 			&reps.MinutesSpent,

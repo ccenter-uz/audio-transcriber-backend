@@ -73,20 +73,21 @@ type DailyActiveBlock struct {
 }
 
 type DatasetViewerList struct {
-	AudioID       int      `json:"audio_id"`
-	AudioUrl      string   `json:"audio_url"`
-	ChunkID       int      `json:"chunk_id"`
-	ChunkUrl      string   `json:"chunk_url"`
-	Duration      float32  `json:"duration"`
-	PreviouText   *string  `json:"previous_text"`
-	ChunkText     *string  `json:"text"`
-	NextText      *string  `json:"next_text"`
-	Sentence      *string  `json:"sentence"`
-	ReportText    *string  `json:"report_text"`
-	Transcriber   *string  `json:"transcriber"`
-	TranscriberID *string  `json:"transcriber_id"`
-	MinutesSpent  *float32 `json:"minutes_spent"`
-	Emotion       *string  `json:"emotion"`
+	AudioID                  int      `json:"audio_id"`
+	AudioUrl                 string   `json:"audio_url"`
+	ChunkID                  int      `json:"chunk_id"`
+	ChunkUrl                 string   `json:"chunk_url"`
+	Duration                 float32  `json:"duration"`
+	PreviouText              *string  `json:"previous_text"`
+	ChunkText                *string  `json:"text"`
+	NextText                 *string  `json:"next_text"`
+	Sentence                 *string  `json:"sentence"`
+	ReportText               *string  `json:"report_text"`
+	TranscribeTextNormalized *string  `json:"transcribe_text_normalized"`
+	Transcriber              *string  `json:"transcriber"`
+	TranscriberID            *string  `json:"transcriber_id"`
+	MinutesSpent             *float32 `json:"minutes_spent"`
+	Emotion                  *string  `json:"emotion"`
 }
 
 type DatasetViewerListResponse struct {

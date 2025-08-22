@@ -92,6 +92,8 @@ definitions:
         type: string
       text:
         type: string
+      transcribe_text_normalized:
+        type: string
       transcriber:
         type: string
       transcriber_id:
@@ -604,6 +606,10 @@ paths:
       - description: Russian
         in: query
         name: ru
+        type: boolean
+      - description: Number
+        in: query
+        name: number
         type: boolean
       - description: Offset for pagination
         in: query

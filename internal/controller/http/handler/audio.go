@@ -149,7 +149,7 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afile
 
 	file, err := os.Open(audioPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open audio file: %w", err)
 	}
 	defer file.Close()
 
@@ -158,11 +158,11 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afile
 
 	part, err := writer.CreateFormFile("audio_file", filepath.Base(audioPath))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create form file: %w", err)
 	}
 	_, err = io.Copy(part, file)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to copy file content: %w", err)
 	}
 
 	writer.WriteField("min_duration", "1")
@@ -170,12 +170,12 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afile
 
 	err = writer.Close()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to close writer: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", url, &requestBody)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set("Accept", "application/json")
@@ -183,7 +183,7 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afile
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -193,13 +193,13 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afile
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	var result Response
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	outputDir := "./internal/media/segments"
@@ -246,7 +246,7 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afile
 		// chunk.Start = chunk.Start + (1800 * float64(a))
 		// chunk.End = chunk.End + (1800 * float64(a))
 
-		// text, err := extractTranscript("./internal/media/dunyodagi.vtt", chunk.Start, chunk.End)
+		// text, err := extractTranscript("./internal/media/mirshakar.vtt", chunk.Start, chunk.End)
 		// if err != nil {
 		// 	slog.Error("Failed to extract transcript", "err", err)
 		// 	return err
