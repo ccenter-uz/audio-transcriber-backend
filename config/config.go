@@ -9,13 +9,13 @@ import (
 type (
 	// Config -.
 	Config struct {
-		App    `yaml:"app"`
-		HTTP   `yaml:"http"`
-		Log    `yaml:"logger"`
-		PG     `yaml:"postgres"`
+		// App    `yaml:"app"`
+		// HTTP   `yaml:"http"`
+		// Log    `yaml:"logger"`
+		// PG     `yaml:"postgres"`
 		Minio  `yaml:"minio"`
-		ApiKey `yaml:"api_key"`
-		JWT    `yaml:"jwt"`
+		// ApiKey `yaml:"api_key"`
+		// JWT    `yaml:"jwt"`
 	}
 
 	// App -.

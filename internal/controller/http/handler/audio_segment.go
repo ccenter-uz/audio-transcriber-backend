@@ -12,14 +12,14 @@ import (
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
 )
 
-var allowedUsers = map[string]bool{
-	"3bc26bff-3ba9-44c5-a7b0-3efc1597e1e8": true,
-	"02ae5f10-3500-40a3-a440-717b31ce03cb": true,
-	"74bc7090-b052-4faa-b140-ff551d95ef44": true,
-	"cc196d3a-c41c-4e7c-86c6-c8833475047b": true,
-	"198e6cf5-0a80-4ad2-837d-7c2163ec7a8d": true,
-	"6c57c940-4884-4eab-a7fd-fd2d3a454397": true,
-}
+// var allowedUsers = map[string]bool{
+// 	"3bc26bff-3ba9-44c5-a7b0-3efc1597e1e8": true,
+// 	"02ae5f10-3500-40a3-a440-717b31ce03cb": true,
+// 	"74bc7090-b052-4faa-b140-ff551d95ef44": true,
+// 	"cc196d3a-c41c-4e7c-86c6-c8833475047b": true,
+// 	"198e6cf5-0a80-4ad2-837d-7c2163ec7a8d": true,
+// 	"6c57c940-4884-4eab-a7fd-fd2d3a454397": true,
+// }
 
 // GetAudioSegment godoc
 // @Router /api/v1/audio_segment/{id} [get]
@@ -134,10 +134,10 @@ func (h *Handler) GetAudioSegments(ctx *gin.Context) {
 	req.UIserId = user_id
 	req.UserID = ctx.Query("user_id")
 
-	if !allowedUsers[req.UserID] {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
-		return
-	}
+	// if !allowedUsers[req.UserID] {
+	// 	ctx.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+	// 	return
+	// }
 
 	// Fetch audio_segment
 	audio_segment, err := h.UseCase.AudioSegmentRepo.GetList(ctx, &req)

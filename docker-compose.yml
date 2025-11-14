@@ -38,19 +38,19 @@ services:
   #   networks:
   #     - ntwrk
 
-  # vcdb:
-  #   image: postgres:latest
-  #   container_name: vcdb
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: mirxonjon
-  #     POSTGRES_DB: voice_transcribe
-  #   ports:
-  #     - "5436:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - ntwrk
+  vcdb:
+    image: postgres:latest
+    container_name: vcdb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1111
+      POSTGRES_DB: voice_transcribe
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - ntwrk
   # migrate:
   #   image: migrate/migrate
   #   depends_on:
@@ -69,8 +69,8 @@ networks:
     external: true
 
 
-# volumes:
-#   postgres_data:
-#     driver: local
+volumes:
+  postgres_data:
+    driver: local
   # minio_data:
   #   driver: local
