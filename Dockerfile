@@ -9,9 +9,14 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags migrate -o voice_transcribe ./cmd
 
-FROM alpine:latest
+FROM alpine:3.19
 
 WORKDIR /app
+
+RUN echo "https://mirror.yandex.ru/mirrors/alpine/v3.19/main" > /etc/apk/repositories && \
+    echo "https://mirror.yandex.ru/mirrors/alpine/v3.19/community" >> /etc/apk/repositories && \
+    apk update && \
+    apk add --no-cache ca-certificates tzdata
 
 RUN apk add --no-cache ca-certificates tzdata
 

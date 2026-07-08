@@ -1,14 +1,13 @@
 package handler
 
 import (
-	"bytes"
+	
 	"encoding/json"
 	"io/ioutil"
 	"log/slog"
 	"net/http"
 	"strconv"
-	"time"
-
+	
 	"github.com/gin-gonic/gin"
 	"github.com/mirjalilova/voice_transcribe/config"
 	"github.com/mirjalilova/voice_transcribe/internal/controller/http/token"
@@ -28,7 +27,7 @@ import (
 func (h *Handler) Login(ctx *gin.Context) {
 	var (
 		body entity.LoginReq
-		url  = "https://api.graphic.ccenter.uz/api/v1/Auth/user/signIn"
+		// url  = "https://api.graphic.ccenter.uz/api/v1/Auth/user/signIn"
 	)
 
 	err := ctx.ShouldBindJSON(&body)
@@ -37,21 +36,21 @@ func (h *Handler) Login(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.Marshal(body)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
+	// jsonData, _ := json.Marshal(body)
+	// resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer resp.Body.Close()
 
-	b, _ := ioutil.ReadAll(resp.Body)
+	// b, _ := ioutil.ReadAll(resp.Body)
 
-	var loginResp entity.LoginRes
-	err = json.Unmarshal(b, &loginResp)
-	if err != nil {
-		ctx.JSON(500, gin.H{"error": "Invalid response from auth service"})
-		return
-	}
+	// var loginResp entity.LoginRes
+	// err = json.Unmarshal(b, &loginResp)
+	// if err != nil {
+	// 	ctx.JSON(500, gin.H{"error": "Invalid response from auth service"})
+	// 	return
+	// }
 
 	user, err := h.UseCase.AuthRepo.Login(ctx, &body)
 	if err == nil {
@@ -69,63 +68,66 @@ func (h *Handler) Login(ctx *gin.Context) {
 		})
 		return
 	}
+	ctx.JSON(500, gin.H{"error": err.Error()})
 
-	req, err := http.NewRequest("GET", "https://api.graphic.ccenter.uz/api/v1/Auth/one", nil)
-	if err != nil {
-		slog.Error("Request creation error", slog.String("error", err.Error()))
-		ctx.JSON(500, gin.H{"error": "Request creation error"})
-		return
-	}
+	// req, err := http.NewRequest("GET", "https://api.graphic.ccenter.uz/api/v1/Auth/one", nil)
+	// if err != nil {
+	// 	slog.Error("Request creation error", slog.String("error", err.Error()))
+	// 	ctx.JSON(500, gin.H{"error": "Request creation error"})
+	// 	return
+	// }
 
-	req.Header.Set("Authorization", "Bearer "+loginResp.Token)
-	req.Header.Set("Accept", "*/*")
+	// req.Header.Set("Authorization", "Bearer "+loginResp.Token)
+	// req.Header.Set("Accept", "*/*")
 
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		slog.Error("Request error", slog.String("error", err.Error()))
-		ctx.JSON(500, gin.H{"error": "Request error"})
-		return
-	}
-	defer res.Body.Close()
+	// client := &http.Client{}
+	// res, err := client.Do(req)
+	// if err != nil {
+	// 	slog.Error("Request error", slog.String("error", err.Error()))
+	// 	ctx.JSON(500, gin.H{"error": "Request error"})
+	// 	return
+	// }
+	// defer res.Body.Close()
 
-	bodyUser, _ := ioutil.ReadAll(res.Body)
+	// bodyUser, _ := ioutil.ReadAll(res.Body)
 
-	if res.StatusCode != http.StatusOK {
-		slog.Error("Failed to get user info", slog.String("error", string(bodyUser)))
-		ctx.JSON(res.StatusCode, gin.H{"error": "Failed to get user info", "body": string(bodyUser)})
-		return
-	}
+	// if res.StatusCode != http.StatusOK {
+	// 	slog.Error("Failed to get user info", slog.String("error", string(bodyUser)))
+	// 	ctx.JSON(res.StatusCode, gin.H{"error": "Failed to get user info", "body": string(bodyUser)})
+	// 	return
+	// }
 
-	var userInfo entity.UserInfo
-	err = json.Unmarshal(bodyUser, &userInfo)
-	if err != nil {
-		slog.Error("Failed to parse response", slog.String("error", err.Error()))
-		ctx.JSON(500, gin.H{"error": "Failed to parse response"})
-		return
-	}
+	// var userInfo entity.UserInfo
+	// err = json.Unmarshal(bodyUser, &userInfo)
+	// if err != nil {
+	// 	slog.Error("Failed to parse response", slog.String("error", err.Error()))
+	// 	ctx.JSON(500, gin.H{"error": "Failed to parse response"})
+	// 	return
+	// }
 
-	userInfo.CreateDate = time.Now().Format("2006-01-02 15:04:05")
-	err = h.UseCase.AuthRepo.Create(ctx, &userInfo)
-	if err != nil {
-		slog.Error("Error creating user", slog.String("error", err.Error()))
-		ctx.JSON(500, gin.H{"error": "Error creating user"})
-		return
-	}
-	tokens := token.GenerateJWTToken(user.AgentID, "transcriber", user.Name)
+	// userInfo.CreateDate = time.Now().Format("2006-01-02 15:04:05")
+	// err = h.UseCase.AuthRepo.Create(ctx, &userInfo)
+	// if err != nil {
+	// 	slog.Error("Error creating user", slog.String("error", err.Error()))
+	// 	ctx.JSON(500, gin.H{"error": "Error creating user"})
+	// 	return
+	// }
+	// tokens := token.GenerateJWTToken(user.AgentID, "transcriber", user.Name)
 	// if err != nil {
 	// 	slog.Error("Error generating token", slog.String("error", err.Error()))
 	// 	ctx.JSON(500, gin.H{"error": "Error generating token"})
 	// 	return
 	// }
 
-	slog.Info("Login successful")
-	ctx.JSON(200, gin.H{
-		"message":      "Login successful",
-		"access_token": tokens.AccessToken,
-		"user":         userInfo,
-	})
+	// slog.Info("Login successful")
+	// ctx.JSON(200, gin.H{
+	// 	"message":      "Login successful",
+	// 	"access_token": tokens.AccessToken,
+	// 	"user":         userInfo,
+	// })
 }
+
+
 
 // // CreateUser godoc
 // // @Router /api/v1/user/create [post]
