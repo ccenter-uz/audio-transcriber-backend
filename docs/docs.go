@@ -818,7 +818,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Upload Zip file",
+                "description": "Upload Zip file with audios, or Txt file with MinIO audio URLs (one URL per line)",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -828,11 +828,11 @@ const docTemplate = `{
                 "tags": [
                     "audio"
                 ],
-                "summary": "Upload Zip file",
+                "summary": "Upload Zip or Txt file",
                 "parameters": [
                     {
                         "type": "file",
-                        "description": "Zip file",
+                        "description": "Zip or Txt file",
                         "name": "file",
                         "in": "formData",
                         "required": true

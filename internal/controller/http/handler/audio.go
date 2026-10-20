@@ -10,11 +10,14 @@ import (
 	"log/slog"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mirjalilova/voice_transcribe/config"
@@ -22,13 +25,13 @@ import (
 )
 
 // UploadZipAndExtractAudio godoc
-// @Summary Upload Zip file
-// @Description Upload Zip file
+// @Summary Upload Zip or Txt file
+// @Description Upload Zip file with audios, or Txt file with MinIO audio URLs (one URL per line)
 // @Tags audio
 // @Accept multipart/form-data
 // @Produce json
 // @Security BearerAuth
-// @Param file formData file true "Zip file"
+// @Param file formData file true "Zip or Txt file"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -48,6 +51,11 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 		return
 	}
 	defer os.Remove(tempPath)
+
+	if strings.ToLower(filepath.Ext(file.Filename)) == ".txt" {
+		h.processAudioURLList(c, tempPath)
+		return
+	}
 
 	r, err := zip.OpenReader(tempPath)
 	if err != nil {
@@ -126,6 +134,113 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Audio files saved successfully",
 	})
+}
+
+// processAudioURLList reads audio URLs (already uploaded to MinIO) line by line,
+// downloads each one, saves it to db and splits it into segments.
+func (h *Handler) processAudioURLList(c *gin.Context, txtPath string) {
+	txtFile, err := os.Open(txtPath)
+	if err != nil {
+		slog.Error("Error opening txt file", "err", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to open txt file"})
+		return
+	}
+	defer txtFile.Close()
+
+	var urls []string
+	scanner := bufio.NewScanner(txtFile)
+	for scanner.Scan() {
+		line := strings.TrimSpace(strings.TrimPrefix(scanner.Text(), "\ufeff"))
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		urls = append(urls, line)
+	}
+	if err := scanner.Err(); err != nil {
+		slog.Error("Error reading txt file", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to read txt file"})
+		return
+	}
+	if len(urls) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Txt file has no audio urls"})
+		return
+	}
+
+	outputDir := "./internal/media/audio"
+	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+		slog.Error("Error creating output folder", "err", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to create output folder"})
+		return
+	}
+
+	client := &http.Client{Timeout: 5 * time.Minute}
+	saved := 0
+	failed := map[string]string{}
+
+	for _, rawURL := range urls {
+		if err := h.processAudioURL(c, client, rawURL, outputDir); err != nil {
+			slog.Error("Error processing audio url", "url", rawURL, "err", err)
+			failed[rawURL] = err.Error()
+			continue
+		}
+		saved++
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Audio files saved successfully",
+		"total":   len(urls),
+		"saved":   saved,
+		"failed":  failed,
+	})
+}
+
+func (h *Handler) processAudioURL(c *gin.Context, client *http.Client, rawURL, outputDir string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return fmt.Errorf("invalid url")
+	}
+
+	fileName := path.Base(u.Path)
+	if !isAudioFile(fileName) {
+		return fmt.Errorf("not an audio file")
+	}
+
+	resp, err := client.Get(rawURL)
+	if err != nil {
+		return fmt.Errorf("failed to download audio: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download audio: %s", resp.Status)
+	}
+
+	dstPath := filepath.Join(outputDir, fileName)
+	dstFile, err := os.Create(dstPath)
+	if err != nil {
+		return fmt.Errorf("unable to create file: %w", err)
+	}
+	defer os.Remove(dstPath)
+
+	_, err = io.Copy(dstFile, resp.Body)
+	dstFile.Close()
+	if err != nil {
+		return fmt.Errorf("unable to write file: %w", err)
+	}
+
+	audio_id, err := h.UseCase.AudioFileRepo.Create(c, &entity.CreateAudioFile{
+		Filename: fileName,
+		FilePath: rawURL,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create audio file: %w", err)
+	}
+
+	if err := h.Chunking(c, *audio_id, dstPath, fileName); err != nil {
+		return fmt.Errorf("unable to chunk audio file: %w", err)
+	}
+
+	return nil
 }
 
 func isAudioFile(filename string) bool {
@@ -233,8 +348,7 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afile
 		minioURL, err := h.MinIO.Upload(*h.Config, filepath.Base(filename), filename)
 		if err != nil {
 			slog.Error("Failed to upload file to MinIO", "err", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file to storage"})
-			return err
+			return fmt.Errorf("failed to upload chunk to storage: %w", err)
 		}
 
 		// a, err := strconv.Atoi(afileName[14:15])
