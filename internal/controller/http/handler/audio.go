@@ -3,12 +3,9 @@ package handler
 import (
 	"archive/zip"
 	"bufio"
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
-	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,8 +17,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/mirjalilova/voice_transcribe/config"
 	"github.com/mirjalilova/voice_transcribe/internal/entity"
+	"github.com/mirjalilova/voice_transcribe/pkg/audiochunk"
 )
 
 // UploadZipAndExtractAudio godoc
@@ -121,7 +120,7 @@ func (h *Handler) UploadZipAndExtractAudio(c *gin.Context) {
 		err = h.Chunking(c, *audio_id, dstPath, f.Name)
 		if err != nil {
 			slog.Error("Error chunking audio file", "err", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to chunk audio file"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to chunk audio file", "file": f.Name, "detail": err.Error()})
 			return
 		}
 
@@ -248,105 +247,32 @@ func isAudioFile(filename string) bool {
 	return ext == ".mp3" || ext == ".wav" || ext == ".flac" || ext == ".ogg" || ext == ".m4a" || ext == ".spx"
 }
 
-type Chunk struct {
-	Start   float64 `json:"start"`
-	End     float64 `json:"end"`
-	ChunkID string  `json:"chunk_id"`
-}
-
-type Response struct {
-	JobID  string  `json:"job_id"`
-	Chunks []Chunk `json:"chunks"`
-}
-
 func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afileName string) error {
-	url := "http://192.168.31.27:9512/vad-chunk"
-
-	file, err := os.Open(audioPath)
+	chunks, err := audiochunk.Detect(c, audioPath, audiochunk.DefaultOptions)
 	if err != nil {
-		return fmt.Errorf("failed to open audio file: %w", err)
+		return fmt.Errorf("failed to detect chunks: %w", err)
 	}
-	defer file.Close()
-
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-
-	part, err := writer.CreateFormFile("audio_file", filepath.Base(audioPath))
-	if err != nil {
-		return fmt.Errorf("failed to create form file: %w", err)
-	}
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return fmt.Errorf("failed to copy file content: %w", err)
-	}
-
-	writer.WriteField("min_duration", "1")
-	writer.WriteField("max_duration", "20")
-
-	err = writer.Close()
-	if err != nil {
-		return fmt.Errorf("failed to close writer: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", url, &requestBody)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("Accept", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to vad-chunk: %s", resp.Status)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	var result Response
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal response: %w", err)
+	if len(chunks) == 0 {
+		slog.Warn("No speech found in audio, skipping chunking", "file", afileName)
+		return nil
 	}
 
 	outputDir := "./internal/media/segments"
-	os.MkdirAll(outputDir, os.ModePerm)
+	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create segments folder: %w", err)
+	}
 
-	for _, chunk := range result.Chunks {
-		downloadURL := fmt.Sprintf("http://192.168.31.27:9512/download/%s/%s", result.JobID, chunk.ChunkID)
+	prefix := uuid.NewString()
+	for i, chunk := range chunks {
+		filename := filepath.Join(outputDir, fmt.Sprintf("%s_chunk_%03d.wav", prefix, i+1))
 
-		resp, err := http.Get(downloadURL)
-		if err != nil {
-			return fmt.Errorf("failed to download chunk: %w", err)
+		if err := audiochunk.Extract(c, audioPath, filename, chunk); err != nil {
+			return fmt.Errorf("failed to extract chunk: %w", err)
 		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("failed to download chunk: %s", resp.Status)
-		}
-
-		filename := filepath.Join(outputDir, chunk.ChunkID)
-		outFile, err := os.Create(filename)
-		if err != nil {
-			return fmt.Errorf("error creating file: %w", err)
-		}
-
-		_, err = io.Copy(outFile, resp.Body)
-		if err != nil {
-			return fmt.Errorf("error saving file: %w", err)
-		}
-		outFile.Close()
 
 		minioURL, err := h.MinIO.Upload(*h.Config, filepath.Base(filename), filename)
 		if err != nil {
+			os.Remove(filename)
 			slog.Error("Failed to upload file to MinIO", "err", err)
 			return fmt.Errorf("failed to upload chunk to storage: %w", err)
 		}
@@ -373,16 +299,17 @@ func (h *Handler) Chunking(c *gin.Context, audio_id int, audioPath string, afile
 		err = h.UseCase.AudioSegmentRepo.Create(c, &entity.CreateAudioSegment{
 			AudioId:  audio_id,
 			FileName: minioURL,
-			Duration: float32(chunk.End - chunk.Start),
+			Duration: float32(chunk.Duration()),
 			// TranscribeOption: text,
 		})
 		if err != nil {
+			os.Remove(filename)
 			return fmt.Errorf("failed to create audio segment: %w", err)
 		}
 
 		err = os.Remove(filename)
 		if err != nil {
-			slog.Error("Failed to remove local file after upload", "file", chunk.ChunkID, "err", err)
+			slog.Error("Failed to remove local file after upload", "file", filename, "err", err)
 		}
 	}
 	return nil

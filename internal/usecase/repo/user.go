@@ -34,7 +34,7 @@ func (r *AuthRepo) Login(ctx context.Context, req *entity.LoginReq) (*entity.Use
 
 	var password string
 	var createdAt time.Time
-	query := `SELECT id, login, role, password_hash, service_name, username, first_number, image_url, created_at FROM users WHERE login = $1 AND password_hash = $2 AND deleted_at = 0`
+	query := `SELECT id, login, role, password_hash, service_name, username, first_number, image_url, created_at FROM users WHERE login = $1 AND password_hash = $2 AND can_login = TRUE AND deleted_at = 0`
 	err := r.pg.Pool.QueryRow(ctx, query, req.Login, req.Password).Scan(
 		&res.AgentID,
 		&res.Login,

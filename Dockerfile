@@ -16,7 +16,7 @@ WORKDIR /app
 RUN echo "https://mirror.yandex.ru/mirrors/alpine/v3.19/main" > /etc/apk/repositories && \
     echo "https://mirror.yandex.ru/mirrors/alpine/v3.19/community" >> /etc/apk/repositories && \
     apk update && \
-    apk add --no-cache ca-certificates tzdata
+    apk add --no-cache ca-certificates tzdata ffmpeg
 
 RUN apk add --no-cache ca-certificates tzdata
 
