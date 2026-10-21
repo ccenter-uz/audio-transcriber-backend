@@ -71,7 +71,12 @@ func Run(cfg *config.Config) {
 	handler := gin.New()
 	v1.NewRouter(handler, l, cfg, useCase, minioClient)
 
-	httpServer := httpserver.New(handler, httpserver.Port(cfg.HTTP.Port))
+	// upload-zip-audio downloads and chunks many audios in one request, so allow long requests
+	httpServer := httpserver.New(handler,
+		httpserver.Port(cfg.HTTP.Port),
+		httpserver.ReadTimeout(30*time.Minute),
+		httpserver.WriteTimeout(60*time.Minute),
+	)
 
 	l.Info("app - Run - httpServer: %s", cfg.HTTP.Port)
 
