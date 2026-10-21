@@ -37,10 +37,10 @@ build-prod:
   extends: .build_prod_template
   tags: [crm-dev]
   rules:
-    - if: '$CI_COMMIT_BRANCH == main'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
 deploy-prod:
   extends: .deploy_prod_template
   tags: [crm-dev]
   rules:
-    - if: '$CI_COMMIT_BRANCH == main'
+    - if: '$CI_COMMIT_BRANCH == "main"'
