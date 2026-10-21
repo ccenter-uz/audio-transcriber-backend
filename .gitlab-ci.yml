@@ -1,0 +1,46 @@
+stages:
+  - build
+  - deploy
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_HOST: "unix:///var/run/docker.sock"
+
+# ---------- TEMPLATES ----------
+
+.build_prod_template:
+  stage: build
+  image: docker:25
+  script:
+    - docker compose build
+
+.deploy_prod_template:
+  stage: deploy
+  image: docker:25
+  before_script:
+    - echo "DISABLE_SWAGGER_HTTP_HANDLER=$DISABLE_SWAGGER_HTTP_HANDLER" >> .env
+    - echo "GIN_MODE=$GIN_MODE" >> .env
+    - echo "PG_URL=$PG_URL" >> .env
+    - echo "API_KEY=$API_KEY" >> .env
+    - echo "JWT_SECRET=$JWT_SECRET" >> .env
+    - echo "MINIO_ENDPOINT=$MINIO_ENDPOINT" >> .env
+    - echo "MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY" >> .env
+    - echo "MINIO_SECRET_KEY=$MINIO_SECRET_KEY" >> .env
+    - echo "MINIO_BUCKET_NAME=$MINIO_BUCKET_NAME" >> .env
+  script:
+    - docker compose down
+    - docker compose up -d --build --force-recreate
+    - docker image prune -f
+
+# ---------- PROD ----------
+
+build-prod:
+  extends: .build_prod_template
+  tags: [crm-dev]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == main'
+
+deploy-prod:
+  extends: .deploy_prod_template
+  tags: [crm-dev]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == main'
