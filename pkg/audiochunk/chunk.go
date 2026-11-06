@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -31,40 +32,81 @@ var DefaultOptions = Options{
 	SilenceDuration: 0.3,
 }
 
+// MixedChannels marks a chunk taken from all channels mixed down to mono.
+const MixedChannels = -1
+
 // Chunk is a part of the source audio, in seconds.
 type Chunk struct {
-	Start float64
-	End   float64
+	Start   float64
+	End     float64
+	Channel int // source channel index (0 - left, 1 - right) or MixedChannels
 }
 
 func (c Chunk) Duration() float64 {
 	return c.End - c.Start
 }
 
-// Detect returns speech chunks of the audio file.
+// Detect returns speech chunks of the audio file sorted by start time.
+// Each channel of a stereo file (e.g. operator and client) is chunked separately;
+// mono files and stereo files with identical channels are chunked as one mixed channel.
 func Detect(ctx context.Context, audioPath string, opt Options) ([]Chunk, error) {
-	total, err := probeDuration(ctx, audioPath)
+	total, channels, err := probe(ctx, audioPath)
 	if err != nil {
 		return nil, err
 	}
 
-	silences, err := detectSilences(ctx, audioPath, opt)
-	if err != nil {
-		return nil, err
+	if channels == 2 {
+		dualMono, err := isDualMono(ctx, audioPath)
+		if err != nil {
+			return nil, err
+		}
+		if dualMono {
+			channels = 1
+		}
 	}
 
-	return split(total, silences, opt), nil
+	if channels < 2 {
+		silences, err := detectSilences(ctx, audioPath, MixedChannels, opt)
+		if err != nil {
+			return nil, err
+		}
+		chunks := split(total, silences, opt)
+		for i := range chunks {
+			chunks[i].Channel = MixedChannels
+		}
+		return chunks, nil
+	}
+
+	var chunks []Chunk
+	for ch := 0; ch < channels; ch++ {
+		silences, err := detectSilences(ctx, audioPath, ch, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, c := range split(total, silences, opt) {
+			c.Channel = ch
+			chunks = append(chunks, c)
+		}
+	}
+	sort.SliceStable(chunks, func(i, j int) bool { return chunks[i].Start < chunks[j].Start })
+	return chunks, nil
 }
 
 // Extract writes the chunk to dstPath as mono 16-bit PCM wav.
 func Extract(ctx context.Context, audioPath, dstPath string, chunk Chunk) error {
-	cmd := exec.CommandContext(ctx, "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+	args := []string{"-hide_banner", "-loglevel", "error", "-y",
 		"-i", audioPath,
 		"-ss", formatSeconds(chunk.Start),
 		"-t", formatSeconds(chunk.Duration()),
-		"-ac", "1", "-c:a", "pcm_s16le",
-		dstPath,
-	)
+	}
+	if chunk.Channel == MixedChannels {
+		args = append(args, "-ac", "1")
+	} else {
+		args = append(args, "-af", channelFilter(chunk.Channel))
+	}
+	args = append(args, "-c:a", "pcm_s16le", dstPath)
+
+	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -73,24 +115,64 @@ func Extract(ctx context.Context, audioPath, dstPath string, chunk Chunk) error 
 	return nil
 }
 
-func probeDuration(ctx context.Context, audioPath string) (float64, error) {
+// probe returns the duration in seconds and the channel count of the first audio stream.
+func probe(ctx context.Context, audioPath string) (float64, int, error) {
 	cmd := exec.CommandContext(ctx, "ffprobe", "-v", "error",
-		"-show_entries", "format=duration",
-		"-of", "default=noprint_wrappers=1:nokey=1",
+		"-select_streams", "a:0",
+		"-show_entries", "stream=channels:format=duration",
+		"-of", "default=noprint_wrappers=1",
 		audioPath,
 	)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	if err != nil {
-		return 0, fmt.Errorf("ffprobe: %w: %s", err, strings.TrimSpace(stderr.String()))
+		return 0, 0, fmt.Errorf("ffprobe: %w: %s", err, strings.TrimSpace(stderr.String()))
 	}
 
-	duration, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
-	if err != nil || duration <= 0 {
-		return 0, fmt.Errorf("ffprobe: invalid duration %q", strings.TrimSpace(string(out)))
+	var duration float64
+	var channels int
+	for _, line := range strings.Split(string(out), "\n") {
+		key, value, _ := strings.Cut(strings.TrimSpace(line), "=")
+		switch key {
+		case "duration":
+			duration, _ = strconv.ParseFloat(value, 64)
+		case "channels":
+			channels, _ = strconv.Atoi(value)
+		}
 	}
-	return duration, nil
+	if duration <= 0 || channels <= 0 {
+		return 0, 0, fmt.Errorf("ffprobe: invalid audio info %q", strings.TrimSpace(string(out)))
+	}
+	return duration, channels, nil
+}
+
+var reMaxVolume = regexp.MustCompile(`max_volume: (-?[\d.]+|-inf) dB`)
+
+// isDualMono reports whether both channels of a stereo file carry the same signal.
+func isDualMono(ctx context.Context, audioPath string) (bool, error) {
+	cmd := exec.CommandContext(ctx, "ffmpeg", "-hide_banner", "-nostats",
+		"-i", audioPath, "-af", "pan=mono|c0=c0-c1,volumedetect", "-f", "null", "-",
+	)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return false, fmt.Errorf("ffmpeg volumedetect: %w: %s", err, lastLine(stderr.String()))
+	}
+
+	m := reMaxVolume.FindStringSubmatch(stderr.String())
+	if m == nil {
+		return false, fmt.Errorf("ffmpeg volumedetect: max_volume not found")
+	}
+	if m[1] == "-inf" {
+		return true, nil
+	}
+	diff, _ := strconv.ParseFloat(m[1], 64)
+	return diff < -60, nil
+}
+
+func channelFilter(channel int) string {
+	return fmt.Sprintf("pan=mono|c0=c%d", channel)
 }
 
 var (
@@ -98,8 +180,11 @@ var (
 	reSilenceEnd   = regexp.MustCompile(`silence_end: (-?[\d.]+)`)
 )
 
-func detectSilences(ctx context.Context, audioPath string, opt Options) ([]Chunk, error) {
+func detectSilences(ctx context.Context, audioPath string, channel int, opt Options) ([]Chunk, error) {
 	filter := fmt.Sprintf("silencedetect=noise=%s:d=%s", opt.SilenceNoise, formatSeconds(opt.SilenceDuration))
+	if channel != MixedChannels {
+		filter = channelFilter(channel) + "," + filter
+	}
 	cmd := exec.CommandContext(ctx, "ffmpeg", "-hide_banner", "-nostats",
 		"-i", audioPath, "-af", filter, "-f", "null", "-",
 	)
